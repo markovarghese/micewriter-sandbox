@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: micewriter-sandbox
+  namespace: micewriter-sandbox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: micewriter-sandbox
+  template:
+    metadata:
+      labels:
+        app: micewriter-sandbox
+      annotations:
+        # This label triggers the micewriter-k8s-injector Mutating Webhook.
+        # The webhook will inject:
+        #   - the micewriter-engine sidecar container
+        #   - an emptyDir volume at /var/run/app (shared UDS socket)
+        #   - a generic ephemeral PVC at /var/lib/rocksdb (RocksDB cache)
+        #   - MINIO_URL and NESSIE_URI environment variables into the sidecar
+        iceberg-stream.yourcompany.com/inject: "true"
+    spec:
+      containers:
+        - name: sandbox
+          image: k8s-node-1.local:5000/micewriter-sandbox:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+              cpu: 500m
