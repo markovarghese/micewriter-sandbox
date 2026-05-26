@@ -1,0 +1,33 @@
+apiVersion: skaffold/v4beta9
+kind: Config
+metadata:
+  name: micewriter-sandbox
+
+build:
+  artifacts:
+    - image: micewriter-sandbox
+      # Build context is the parent directory so the Dockerfile can reach
+      # both micewriter-sdk-java and micewriter-sandbox source trees.
+      context: ..
+      docker:
+        dockerfile: micewriter-sandbox/Dockerfile
+  # Push to the k3s node's local containerd registry.
+  # Run: kubectl port-forward -n kube-system svc/registry 5000:5000
+  # Or configure a local registry in skaffold profiles below.
+  local:
+    push: false
+
+deploy:
+  kubectl:
+    manifests:
+      - micewriter-sandbox/k8s/namespace.yaml
+      - micewriter-sandbox/k8s/deployment.yaml
+      - micewriter-sandbox/k8s/service.yaml
+
+# Profile for pushing to a local registry accessible from k3s.
+# Usage: skaffold run -p registry --default-repo=<registry-ip>:5000
+profiles:
+  - name: registry
+    build:
+      local:
+        push: true

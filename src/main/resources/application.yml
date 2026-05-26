@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: micewriter-sandbox
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+micewriter:
+  socket-path: /var/run/app/iceberg.sock
+  connect-timeout-ms: 10000
+  ack-timeout-ms: 5000
+  # Narrow the classpath scan to this app's model package only
+  base-package: com.micewriter.sandbox.model
