@@ -12,8 +12,7 @@ FROM maven:3.9-eclipse-temurin-17 AS builder
 WORKDIR /build
 
 # Install the SDK into the container-local Maven repo first.
-COPY micewriter-sdk-java/pom.xml         ./micewriter-sdk-java/pom.xml
-COPY micewriter-sdk-java/src             ./micewriter-sdk-java/src
+COPY micewriter-sdk-java               ./micewriter-sdk-java
 RUN mvn -f micewriter-sdk-java/pom.xml install -DskipTests -q
 
 # Build the sandbox (SDK is now in the local repo).
@@ -33,4 +32,4 @@ WORKDIR /app
 COPY --from=builder /build/micewriter-sandbox/target/micewriter-sandbox-*.jar app.jar
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "--add-opens", "java.base/java.nio=ALL-UNNAMED", "-jar", "app.jar"]

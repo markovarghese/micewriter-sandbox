@@ -13,6 +13,11 @@ spec:
       labels:
         app: micewriter-sandbox
       annotations:
+        # Prometheus scraping annotations for Grafana Alloy
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/port: "8080"
+        
         # This label triggers the micewriter-k8s-injector Mutating Webhook.
         # The webhook will inject:
         #   - the micewriter-engine sidecar container
@@ -24,7 +29,7 @@ spec:
       containers:
         - name: sandbox
           image: k8s-node-1.local:5000/micewriter-sandbox:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           readinessProbe:

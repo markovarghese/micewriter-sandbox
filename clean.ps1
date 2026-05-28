@@ -1,0 +1,25 @@
+$yaml = @"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: crictl-cleaner
+spec:
+  nodeName: k8s-node-1
+  hostPID: true
+  containers:
+    - name: crictl
+      image: alpine
+      command: ["/bin/sh", "-c", "chroot /host crictl rmi k8s-node-1.local:5000/micewriter-engine:latest || true; echo DONE; sleep 3600"]
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - name: host
+          mountPath: /host
+  volumes:
+    - name: host
+      hostPath:
+        path: /
+  restartPolicy: Never
+"@
+
+$yaml | & D:\githubrepos\k3sonhyperv\kubectl.ps1 apply -f -

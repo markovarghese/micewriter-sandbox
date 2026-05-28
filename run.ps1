@@ -12,14 +12,13 @@ $ErrorActionPreference = "Stop"
 
 # Path to the kubeconfig produced by the k3sonhyperv Ansible playbook.
 # Update this if your k3sonhyperv repo is in a different location.
-$kubeconfig = "D:\githubrepos\k3sonhyperv\kubeconfig"
+$kubeconfig = "$env:USERPROFILE\.kube\config"
 if (-not (Test-Path $kubeconfig)) {
-    Write-Error "kubeconfig not found at $kubeconfig — run install-k3s.yml first."
+    Write-Error "kubeconfig not found at $kubeconfig - run install-k3s.yml first."
     exit 1
 }
 
-docker info > $null 2>&1
-if ($LASTEXITCODE -ne 0) { Write-Error "Docker is not running."; exit 1 }
+# docker info check removed to avoid failing on benign stderr warnings
 
 $registry     = "k8s-node-1.local:5000"
 $image        = "micewriter-sandbox"
@@ -50,6 +49,7 @@ switch ($Target) {
         Invoke-Kubectl apply -f k8s/namespace.yaml
         Invoke-Kubectl apply -f k8s/deployment.yaml
         Invoke-Kubectl apply -f k8s/service.yaml
+        Invoke-Kubectl apply -f k8s/ingress.yaml
         Invoke-Kubectl rollout status deployment/micewriter-sandbox -n $namespace --timeout=120s
 
         Write-Host ""
@@ -59,6 +59,7 @@ switch ($Target) {
     }
 
     "undeploy" {
+        Invoke-Kubectl delete -f k8s/ingress.yaml    --ignore-not-found
         Invoke-Kubectl delete -f k8s/service.yaml    --ignore-not-found
         Invoke-Kubectl delete -f k8s/deployment.yaml --ignore-not-found
         Invoke-Kubectl delete -f k8s/namespace.yaml  --ignore-not-found
