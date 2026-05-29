@@ -1,0 +1,33 @@
+# Maven build output
+target/
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+
+# Log files
+*.log
+
+# Skaffold cache
+.skaffold/
+
+# Claude Code local settings
+.claude/
+
+# Local environment overrides
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*.iml
