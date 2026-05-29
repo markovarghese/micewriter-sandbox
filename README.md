@@ -10,7 +10,7 @@ Reference Spring Boot microservice. Demonstrates end-to-end telemetry ingestion 
 | `micewriter-local-infra` running | `.\run.ps1 up` in that repo |
 | `micewriter-engine` image pushed | `.\push.ps1` in that repo |
 | `micewriter-k8s-injector` deployed | `.\run.ps1 push` then `.\run.ps1 deploy` in that repo |
-| Docker Desktop | Builds the image and runs `kubectl` in a container |
+| Docker Desktop | Builds the image |
 
 ## Running Locally (without k8s)
 
@@ -38,8 +38,7 @@ MICEWRITER_SOCKET_PATH=/tmp/iceberg.sock mvn spring-boot:run
 
 This builds the image using the parent directory as the Docker build context (so both
 `micewriter-sdk-java` and `micewriter-sandbox` source trees are available), pushes it to
-`k8s-node-1.local:5000`, and applies the k8s manifests. `kubectl` runs inside a Docker
-container — no native install needed.
+`k8s-node-1.local:5000`, and applies the k8s manifests.
 
 ```powershell
 # Tear down

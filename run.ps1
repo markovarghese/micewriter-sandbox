@@ -29,12 +29,7 @@ $buildContext = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $namespace    = "micewriter-sandbox"
 
 function Invoke-Kubectl {
-    docker run --rm -i `
-        -v "${kubeconfig}:/kubeconfig:ro" `
-        -e KUBECONFIG=/kubeconfig `
-        -v "${PSScriptRoot}:/workspace:ro" `
-        -w /workspace `
-        bitnami/kubectl:latest @args
+    kubectl --kubeconfig $kubeconfig @args
 }
 
 switch ($Target) {
