@@ -16,6 +16,8 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.time.Duration;
+import org.awaitility.Awaitility;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -23,12 +25,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class SystemE2EIT {
 
-    private static final String APP_URL = "http://k8s-node-1.local";
-    private static final String NESSIE_URI = "http://k8s-node-1.local:19120/api/v1";
-    private static final String MINIO_URL = "http://k8s-node-1.local:9000";
-    private static final String MINIO_ACCESS_KEY = "micewriter";
-    private static final String MINIO_SECRET_KEY = "micewriter123";
-    private static final String WAREHOUSE = "s3://iceberg";
+    private static final String APP_URL = System.getProperty("app.url", System.getenv().getOrDefault("APP_URL", "http://k8s-node-1.local"));
+    private static final String NESSIE_URI = System.getProperty("nessie.uri", System.getenv().getOrDefault("NESSIE_URI", "http://k8s-node-1.local:19120/api/v1"));
+    private static final String MINIO_URL = System.getProperty("minio.url", System.getenv().getOrDefault("MINIO_URL", "http://k8s-node-1.local:9000"));
+    private static final String MINIO_ACCESS_KEY = System.getProperty("minio.access.key", System.getenv().getOrDefault("MINIO_ACCESS_KEY", "micewriter"));
+    private static final String MINIO_SECRET_KEY = System.getProperty("minio.secret.key", System.getenv().getOrDefault("MINIO_SECRET_KEY", "micewriter123"));
+    private static final String WAREHOUSE = System.getProperty("warehouse", System.getenv().getOrDefault("WAREHOUSE", "s3://iceberg"));
     
     private static Catalog catalog;
     private static RestTemplate restTemplate = new RestTemplate();
@@ -60,12 +62,14 @@ public class SystemE2EIT {
     public void testEndToEndIngestion() throws Exception {
         TableIdentifier tableId = TableIdentifier.of(Namespace.of("micewriter"), "telemetry_events");
         
-        long initialRows = 0;
+        final long initialRows;
         if (catalog.tableExists(tableId)) {
             Table table = catalog.loadTable(tableId);
             table.refresh();
             // Count rows manually if needed, or rely on snapshots
             initialRows = countRows(table);
+        } else {
+            initialRows = 0;
         }
 
         // 1. Send 1000 events
@@ -84,8 +88,16 @@ public class SystemE2EIT {
         System.out.println("Flush response: " + flushResponse.getBody());
 
         // Wait for Engine to compile Parquet and commit to Nessie
-        System.out.println("Waiting 5 seconds for commit...");
-        Thread.sleep(5000);
+        System.out.println("Waiting for commit using Awaitility...");
+        Awaitility.await()
+                .atMost(Duration.ofSeconds(30))
+                .pollInterval(Duration.ofSeconds(1))
+                .until(() -> {
+                    if (!catalog.tableExists(tableId)) return false;
+                    Table t = catalog.loadTable(tableId);
+                    t.refresh();
+                    return countRows(t) >= initialRows + 1000;
+                });
 
         // 3. Assert Data
         assertTrue(catalog.tableExists(tableId), "Table should exist after flush");
