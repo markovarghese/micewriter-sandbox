@@ -72,6 +72,20 @@ public class TelemetryController {
         ));
     }
 
+    /**
+     * Trigger a manual flush of the engine's RocksDB buffer to Iceberg.
+     * Note: Requires ENABLE_MANUAL_FLUSH=true on the engine sidecar.
+     *
+     * <pre>
+     * POST /events/flush
+     * </pre>
+     */
+    @PostMapping("/flush")
+    public ResponseEntity<Map<String, Object>> flush() {
+        icebergTemplate.flushNow();
+        return ResponseEntity.ok(Map.of("status", "flushed"));
+    }
+
     // -------------------------------------------------------------------------
 
     public static class EventRequest {

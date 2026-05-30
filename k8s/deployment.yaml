@@ -24,7 +24,7 @@ spec:
         #   - an emptyDir volume at /var/run/app (shared UDS socket)
         #   - a generic ephemeral PVC at /var/lib/rocksdb (RocksDB cache)
         #   - MINIO_URL and NESSIE_URI environment variables into the sidecar
-        iceberg-stream.yourcompany.com/inject: "true"
+        iceberg-stream.micewriter.io/inject: "true"
     spec:
       containers:
         - name: sandbox

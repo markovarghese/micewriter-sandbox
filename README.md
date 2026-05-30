@@ -65,6 +65,12 @@ curl -X POST "http://k8s-node-1.local/events/load?count=5000"
 # → {"sent":5000,"elapsedMs":342,"throughputPerSec":14619}
 ```
 
+### POST `/events/flush` — manually trigger commit
+```bash
+curl -X POST "http://k8s-node-1.local/events/flush"
+# → {"status":"flushed"}
+```
+
 ### GET `/actuator/health`
 ```bash
 curl http://k8s-node-1.local/actuator/health
@@ -84,6 +90,21 @@ kubectl logs -n micewriter-sandbox deploy/micewriter-sandbox -c micewriter-engin
 
 # 3. Nessie: table and snapshot visible
 curl http://k8s-node-1.local:19120/api/v1/trees/main/entries
+```
+
+## Automated E2E Integration Tests
+
+An automated E2E test suite (`SystemE2EIT.java`) validates the full data ingestion pipeline without waiting for the 10-minute flush cycle. It sends traffic, calls the `/events/flush` API, and verifies the materialized Iceberg rows in the Nessie catalog.
+
+Since the test connects to the `k8s-node-1.local` testbed cluster and relies on the `micewriter-sdk-java` SDK, you can run it consistently via a Dockerized Maven environment from the root repository workspace:
+
+```bash
+docker run --rm \
+  --add-host k8s-node-1.local:192.168.69.1 \
+  -v ~/.m2:/root/.m2 \
+  -v $(pwd):/workspace \
+  -w /workspace/micewriter-sandbox \
+  maven:3.9-eclipse-temurin-17 mvn test -Dtest=SystemE2EIT
 ```
 
 ## File Structure
