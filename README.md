@@ -94,18 +94,96 @@ curl http://k8s-node-1.local:19120/api/v1/trees/main/entries
 
 ## Automated E2E Integration Tests
 
-An automated E2E test suite (`SystemE2EIT.java`) validates the full data ingestion pipeline without waiting for the 10-minute flush cycle. It sends traffic, calls the `/events/flush` API, and verifies the materialized Iceberg rows in the Nessie catalog.
+`SystemE2EIT.java` validates the full ingestion pipeline without waiting for the
+10-minute flush cycle: it sends 1000 events, calls `/events/flush`, and asserts
+that exactly 1000 new rows are visible via the Nessie/Iceberg catalog.
 
-Since the test connects to the `k8s-node-1.local` testbed cluster and relies on the `micewriter-sdk-java` SDK, you can run it consistently via a Dockerized Maven environment from the root repository workspace:
+The test is named `*IT.java`, so it runs in the Maven `verify` phase (via
+`maven-failsafe-plugin`) — not `test`. It is selected with `-Dit.test=...`,
+not `-Dtest=...`.
+
+### Prerequisites
+
+1. The local k3s cluster, MinIO, and Nessie are running (see `micewriter-local-infra`).
+2. The latest `micewriter-engine` image is pushed to the k3s registry
+   (`.\push.ps1` in that repo).
+3. The sandbox is deployed (`.\run.ps1 deploy`).
+4. If you've changed the engine sidecar, restart the sandbox to pull the
+   newest image:
+   ```powershell
+   kubectl rollout restart deployment/micewriter-sandbox -n micewriter-sandbox
+   kubectl rollout status  deployment/micewriter-sandbox -n micewriter-sandbox --timeout=180s
+   ```
+
+### Running the test
+
+The test connects to `k8s-node-1.local` over the host network and relies on the
+`micewriter-sdk-java` SDK being available in the local Maven repository. Run it
+in a Dockerized Maven so versions stay consistent across machines.
+
+**1. Install the SDK into the host `~/.m2` (only required after SDK changes):**
 
 ```bash
+# Run from the parent directory that contains both repos (..)
 docker run --rm \
-  --add-host k8s-node-1.local:192.168.69.1 \
-  -v ~/.m2:/root/.m2 \
-  -v $(pwd):/workspace \
-  -w /workspace/micewriter-sandbox \
-  maven:3.9-eclipse-temurin-17 mvn test -Dtest=SystemE2EIT
+  -v "$(pwd):/repos" \
+  -v "$HOME/.m2:/root/.m2" \
+  -w /repos/micewriter-sdk-java \
+  maven:3.9-eclipse-temurin-17 \
+  mvn -q install -DskipTests
 ```
+
+**2. Run the integration test:**
+
+```bash
+# Run from the parent directory that contains both repos (..)
+docker run --rm --network host \
+  -v "$(pwd):/repos" \
+  -v "$HOME/.m2:/root/.m2" \
+  -w /repos/micewriter-sandbox \
+  maven:3.9-eclipse-temurin-17 \
+  mvn -Dit.test=SystemE2EIT \
+      -Dapp.url=http://k8s-node-1.local \
+      -Dnessie.uri=http://k8s-node-1.local:19120/api/v1 \
+      -Dminio.url=http://k8s-node-1.local:9000 \
+      verify
+```
+
+Mounting `$HOME/.m2:/root/.m2` caches Maven dependencies on the host so reruns
+don't redownload ~300 MB each time. `--network host` is required so the test
+JVM can resolve `k8s-node-1.local` exactly as the host does.
+
+### Windows / Git Bash notes
+
+On Windows with Git Bash or MSYS, the shell rewrites `/repos` into a Windows
+path before Docker sees it, breaking the working directory. Prefix the command
+with `MSYS_NO_PATHCONV=1` and use full Windows-style paths for the bind mounts:
+
+```bash
+MSYS_NO_PATHCONV=1 docker run --rm --network host \
+  -v "C:/Users/<you>/source/repos:/repos" \
+  -v "C:/Users/<you>/.m2:/root/.m2" \
+  -w /repos/micewriter-sandbox \
+  maven:3.9-eclipse-temurin-17 \
+  mvn -Dit.test=SystemE2EIT \
+      -Dapp.url=http://k8s-node-1.local \
+      -Dnessie.uri=http://k8s-node-1.local:19120/api/v1 \
+      -Dminio.url=http://k8s-node-1.local:9000 \
+      verify
+```
+
+### Debugging a failure
+
+If the test times out waiting for new rows, the engine likely failed to
+compile or commit. Tail the sidecar logs while the test runs:
+
+```bash
+kubectl logs -n micewriter-sandbox deployment/micewriter-sandbox \
+  -c micewriter-engine --tail=100 -f
+```
+
+Look for `Failed to compile CF` or `Table flush failed` lines — those carry
+the underlying Arrow / Parquet / Iceberg error.
 
 ## File Structure
 
