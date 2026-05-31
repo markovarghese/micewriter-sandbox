@@ -26,22 +26,36 @@ spec:
         #   - MINIO_URL and NESSIE_URI environment variables into the sidecar
         iceberg-stream.micewriter.io/inject: "true"
     spec:
+      # Pin to k8s-node-3 (laptop, faster CPU) so the load-gen tick loop's
+      # rate tracking is not impacted by Rancher / data-lake pods elsewhere.
+      nodeSelector:
+        kubernetes.io/hostname: k8s-node-3
+      # Long enough for the engine sidecar's SIGTERM emergency flush to complete.
+      terminationGracePeriodSeconds: 120
       containers:
         - name: sandbox
           image: k8s-node-1.local:5000/micewriter-sandbox:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
+          env:
+            # Heap sized for 10 MB payloads at 100 ev/s without GC pauses
+            # blowing through the load-gen tick interval.
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Xms1g -Xmx4g -XX:+UseG1GC -XX:MaxGCPauseMillis=50"
           readinessProbe:
             httpGet:
               path: /actuator/health
               port: 8080
             initialDelaySeconds: 20
             periodSeconds: 10
+          # Deliberately overprovisioned: the sandbox is the load generator,
+          # not the system under test. The engine sidecar's limits (set by the
+          # injector) stay at their defaults — those are what we are measuring.
           resources:
             requests:
-              memory: 256Mi
-              cpu: 100m
-            limits:
-              memory: 512Mi
+              memory: 4Gi
               cpu: 500m
+            limits:
+              memory: 6Gi
+              cpu: "4"

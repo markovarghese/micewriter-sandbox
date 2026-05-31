@@ -22,3 +22,10 @@ spec:
                 name: micewriter-sandbox
                 port:
                   number: 80
+          - path: /loadtest
+            pathType: Prefix
+            backend:
+              service:
+                name: micewriter-sandbox
+                port:
+                  number: 80
