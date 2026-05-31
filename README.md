@@ -80,6 +80,8 @@ The hub spec at
 is the authoritative reference for request/response semantics and the
 recommended sweep matrix.
 
+> **View the Results**: The recorded baseline results from these load test sweeps can be found in [`load-tests/results/results.md`](load-tests/results/results.md).
+
 | Method | Path | Body | Response |
 |---|---|---|---|
 | `POST` | `/loadtest/start` | `{ rate, payloadSizeBytes, durationSec }` | `{ runId, status }` |
