@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -82,6 +83,7 @@ public class LoadTestController {
             brief.put("cellCount", r.cells().size());
             runs.add(brief);
         }
+        Collections.reverse(runs);
         return ResponseEntity.ok(Map.of("runs", runs));
     }
 
