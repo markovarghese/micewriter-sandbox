@@ -7,9 +7,9 @@ Reference Spring Boot microservice. Demonstrates end-to-end telemetry ingestion 
 
 | Requirement | Notes |
 |-------------|-------|
-| `micewriter-local-infra` running | `.\run.ps1 up` in that repo |
-| `micewriter-engine` image pushed | `.\push.ps1` in that repo |
-| `micewriter-k8s-injector` deployed | `.\run.ps1 push` then `.\run.ps1 deploy` in that repo |
+| `micewriter-local-infra` running | `powershell -ExecutionPolicy Bypass -File .\run.ps1 up` in that repo |
+| `micewriter-engine` image pushed | `powershell -ExecutionPolicy Bypass -File .\push.ps1` in that repo |
+| `micewriter-k8s-injector` deployed | `powershell -ExecutionPolicy Bypass -File .\run.ps1 push` then `powershell -ExecutionPolicy Bypass -File .\run.ps1 deploy` in that repo |
 | Docker Desktop | Builds the image |
 
 ## Running Locally (without k8s)
