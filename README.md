@@ -11,6 +11,7 @@ Reference Spring Boot microservice. Demonstrates end-to-end telemetry ingestion 
 | `micewriter-engine` image pushed | `.\push.ps1` in that repo |
 | `micewriter-k8s-injector` deployed | `.\run.ps1 push` then `.\run.ps1 deploy` in that repo |
 | Docker Desktop | Builds the image |
+| PowerShell Execution Policy | Ensure scripts are permitted (e.g. `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`) |
 
 ## Running Locally (without k8s)
 
@@ -174,10 +175,10 @@ docker run --rm --network host \
   -v "$HOME/.m2:/root/.m2" \
   -w /repos/micewriter-sandbox \
   maven:3.9-eclipse-temurin-17 \
-  mvn -Dit.test=SystemE2EIT \
-      -Dapp.url=http://k8s-node-1.local \
-      -Dnessie.uri=http://k8s-node-1.local:19120/api/v1 \
-      -Dminio.url=http://k8s-node-1.local:9000 \
+  mvn "-Dit.test=SystemE2EIT" \
+      "-Dapp.url=http://k8s-node-1.local" \
+      "-Dnessie.uri=http://k8s-node-1.local:19120/api/v1" \
+      "-Dminio.url=http://k8s-node-1.local:9000" \
       verify
 ```
 
@@ -197,10 +198,10 @@ MSYS_NO_PATHCONV=1 docker run --rm --network host \
   -v "C:/Users/<you>/.m2:/root/.m2" \
   -w /repos/micewriter-sandbox \
   maven:3.9-eclipse-temurin-17 \
-  mvn -Dit.test=SystemE2EIT \
-      -Dapp.url=http://k8s-node-1.local \
-      -Dnessie.uri=http://k8s-node-1.local:19120/api/v1 \
-      -Dminio.url=http://k8s-node-1.local:9000 \
+  mvn "-Dit.test=SystemE2EIT" \
+      "-Dapp.url=http://k8s-node-1.local" \
+      "-Dnessie.uri=http://k8s-node-1.local:19120/api/v1" \
+      "-Dminio.url=http://k8s-node-1.local:9000" \
       verify
 ```
 
