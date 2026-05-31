@@ -11,7 +11,6 @@ Reference Spring Boot microservice. Demonstrates end-to-end telemetry ingestion 
 | `micewriter-engine` image pushed | `.\push.ps1` in that repo |
 | `micewriter-k8s-injector` deployed | `.\run.ps1 push` then `.\run.ps1 deploy` in that repo |
 | Docker Desktop | Builds the image |
-| PowerShell Execution Policy | Ensure scripts are permitted (e.g. `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`) |
 
 ## Running Locally (without k8s)
 
@@ -34,7 +33,7 @@ MICEWRITER_SOCKET_PATH=/tmp/iceberg.sock mvn spring-boot:run
 
 ```powershell
 # From the micewriter-sandbox directory
-.\run.ps1 deploy
+powershell -ExecutionPolicy Bypass -File .\run.ps1 deploy
 ```
 
 This builds the image using the parent directory as the Docker build context (so both
@@ -43,7 +42,7 @@ This builds the image using the parent directory as the Docker build context (so
 
 ```powershell
 # Tear down
-.\run.ps1 undeploy
+powershell -ExecutionPolicy Bypass -File .\run.ps1 undeploy
 ```
 
 The deployment uses the `iceberg-stream.yourcompany.com/inject: "true"` annotation. The
@@ -139,8 +138,8 @@ not `-Dtest=...`.
 
 1. The local k3s cluster, MinIO, and Nessie are running (see `micewriter-local-infra`).
 2. The latest `micewriter-engine` image is pushed to the k3s registry
-   (`.\push.ps1` in that repo).
-3. The sandbox is deployed (`.\run.ps1 deploy`).
+   (`powershell -ExecutionPolicy Bypass -File .\push.ps1` in that repo).
+3. The sandbox is deployed (`powershell -ExecutionPolicy Bypass -File .\run.ps1 deploy`).
 4. If you've changed the engine sidecar, restart the sandbox to pull the
    newest image:
    ```powershell
