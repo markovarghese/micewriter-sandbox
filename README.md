@@ -71,6 +71,38 @@ curl -X POST "http://k8s-node-1.local/events/flush"
 # → {"status":"flushed"}
 ```
 
+### `/loadtest/*` — in-process load generator
+
+Server-driven load test. The sandbox runs the generator itself (no `k6`
+installation required) and exposes counters + p50/p95/p99 latency per cell.
+The hub spec at
+[`micewriter-hub/docs/load-testing-spec.md`](../micewriter-hub/docs/load-testing-spec.md)
+is the authoritative reference for request/response semantics and the
+recommended sweep matrix.
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| `POST` | `/loadtest/start` | `{ rate, payloadSizeBytes, durationSec }` | `{ runId, status }` |
+| `POST` | `/loadtest/sweep` | `{ restSecondsBetween, cells: [{rate, payloadSizeBytes, durationSec}, …] }` | `{ runId, status, cellCount }` |
+| `GET`  | `/loadtest/{runId}` | — | per-cell counters + p50/p95/p99 |
+| `GET`  | `/loadtest` | — | list of recent runs (newest first) |
+| `POST` | `/loadtest/{runId}/stop` | — | `{ status: "STOPPED" }` |
+
+Only one run (single or sweep) can be active at a time; concurrent
+`POST /loadtest/start` or `POST /loadtest/sweep` returns `409 CONFLICT`
+with the active `runId`.
+
+```bash
+# Single scenario: 100 events/sec × 1 KB × 60 s
+curl -X POST http://k8s-node-1.local/loadtest/start \
+  -H 'Content-Type: application/json' \
+  -d '{"rate":100,"payloadSizeBytes":1024,"durationSec":60}'
+# → {"runId":"<uuid>","status":"RUNNING"}
+
+# Poll for results
+curl http://k8s-node-1.local/loadtest/<runId>
+```
+
 ### GET `/actuator/health`
 ```bash
 curl http://k8s-node-1.local/actuator/health
