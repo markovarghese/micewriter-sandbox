@@ -18,25 +18,22 @@ spec:
       labels:
         app: micewriter-sandbox
       annotations:
-        # Prometheus scraping annotations for Grafana Alloy
+        # Prometheus scraping annotations for Grafana Alloy.
         prometheus.io/scrape: "true"
         prometheus.io/path: "/actuator/prometheus"
         prometheus.io/port: "8080"
-        
-        # This label triggers the micewriter-k8s-injector Mutating Webhook.
-        # The webhook will inject:
-        #   - the micewriter-engine sidecar container
-        #   - an emptyDir volume at /var/run/app (shared UDS socket)
-        #   - a generic ephemeral PVC at /var/lib/rocksdb (RocksDB cache)
-        #   - MINIO_URL and NESSIE_URI environment variables into the sidecar
-        iceberg-stream.micewriter.io/inject: "true"
+        # NOTE: v1 injected a sidecar via 'iceberg-stream.micewriter.io/inject: "true"'.
+        # v2 deletes that path — the SDK now talks gRPC to per-table pipelines
+        # installed via micewriter-local-infra/charts/table-pipeline. No sidecar,
+        # no UDS volume, no per-pod RocksDB PVC.
     spec:
       # Pin to k8s-node-3 (laptop, faster CPU) so the load-gen tick loop's
       # rate tracking is not impacted by Rancher / data-lake pods elsewhere.
       nodeSelector:
         kubernetes.io/hostname: k8s-node-3
-      # Long enough for the engine sidecar's SIGTERM emergency flush to complete.
-      terminationGracePeriodSeconds: 120
+      # v2 in-flight records are buffered on the pipeline, not in the sandbox.
+      # The sandbox just needs enough grace for HTTP requests to drain.
+      terminationGracePeriodSeconds: 30
       containers:
         - name: sandbox
           image: k8s-node-1.local:5000/micewriter-sandbox:latest
@@ -48,15 +45,19 @@ spec:
             # blowing through the load-gen tick interval.
             - name: JAVA_TOOL_OPTIONS
               value: "-Xms1g -Xmx4g -XX:+UseG1GC -XX:MaxGCPauseMillis=50"
+            # Sandbox is in micewriter-sandbox ns; pipelines are in
+            # micewriter-infra. The resolver template substitutes {table}.
+            - name: MICEWRITER_RESOLVER
+              value: "engine-{table}.micewriter-infra.svc:9090"
           readinessProbe:
             httpGet:
               path: /actuator/health
               port: 8080
             initialDelaySeconds: 20
             periodSeconds: 10
-          # Deliberately overprovisioned: the sandbox is the load generator,
-          # not the system under test. The engine sidecar's limits (set by the
-          # injector) stay at their defaults — those are what we are measuring.
+          # Sandbox is the load generator, not the system under test. The
+          # engine pipeline resource budgets (set in the chart values) are
+          # what we are measuring.
           resources:
             requests:
               memory: 4Gi

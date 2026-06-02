@@ -1,7 +1,9 @@
 # micewriter-sandbox
 > Part of the [mIceWriter Ingestion Ecosystem](../micewriter-hub/README.md)
 
-Reference Spring Boot microservice. Demonstrates end-to-end telemetry ingestion through the mIceWriter pipeline: HTTP request → SDK → UDS → engine → RocksDB → (every ~10 min) → MinIO Parquet → Nessie Iceberg commit.
+Reference Spring Boot microservice. Demonstrates end-to-end **v2** telemetry ingestion: HTTP request → SDK → gRPC → per-table engine pipeline → RocksDB → (every ~10 min) → MinIO Parquet → Nessie Iceberg commit. Writes to two Iceberg tables (`telemetry_events`, `audit_events`) so per-table SDK routing is exercised end-to-end.
+
+> 📜 The v1 sandbox (sidecar-injected, UDS-based) is preserved on the `v1` branch and at the `v1.0.0` tag.
 
 ## Prerequisites
 
@@ -9,103 +11,79 @@ Reference Spring Boot microservice. Demonstrates end-to-end telemetry ingestion 
 |-------------|-------|
 | `micewriter-local-infra` running | `powershell -ExecutionPolicy Bypass -File .\run.ps1 up` in that repo |
 | `micewriter-engine` image pushed | `powershell -ExecutionPolicy Bypass -File .\push.ps1` in that repo |
-| `micewriter-k8s-injector` deployed | `powershell -ExecutionPolicy Bypass -File .\run.ps1 push` then `powershell -ExecutionPolicy Bypass -File .\run.ps1 deploy` in that repo |
-| Docker Desktop | Builds the image |
+| Docker Desktop | Builds the sandbox image |
 
-## Running Locally (without k8s)
-
-For local dev, the engine must be running separately and the socket path must be reachable:
-
-```bash
-# Terminal 1 — start the engine (requires Linux/WSL or Docker)
-MINIO_URL=http://k8s-node-1.local:9000 \
-MINIO_ACCESS_KEY=micewriter \
-MINIO_SECRET_KEY=micewriter123 \
-NESSIE_URI=http://k8s-node-1.local:19120/iceberg/v1 \
-SOCKET_PATH=/tmp/iceberg.sock \
-./micewriter-engine
-
-# Terminal 2 — start the sandbox
-MICEWRITER_SOCKET_PATH=/tmp/iceberg.sock mvn spring-boot:run
-```
+There is no longer a `micewriter-k8s-injector` deployment step. v2 retires the sidecar admission webhook entirely; engine pipelines are deployed as Helm releases via `run.ps1 deploy` (see below).
 
 ## Deploying to k8s
 
 ```powershell
-# From the micewriter-sandbox directory
 powershell -ExecutionPolicy Bypass -File .\run.ps1 deploy
 ```
 
-This builds the image using the parent directory as the Docker build context (so both
-`micewriter-sdk-java` and `micewriter-sandbox` source trees are available), pushes it to
-`k8s-node-1.local:5000`, and applies the k8s manifests.
+The `deploy` target now:
+1. **Installs one engine pipeline per Iceberg table** (`engine-telemetry-events` and `engine-audit-events`) into the `micewriter-infra` namespace using [`micewriter-local-infra/charts/table-pipeline`](../micewriter-local-infra/charts/table-pipeline/README.md).
+2. Builds the sandbox image (parent dir is the build context so `micewriter-sdk-java` source is co-built) and pushes to `k8s-node-1.local:5000`.
+3. Applies the sandbox K8s manifests.
 
 ```powershell
-# Tear down
+# Tear down only the sandbox app (pipelines remain — useful for redeploys)
 powershell -ExecutionPolicy Bypass -File .\run.ps1 undeploy
-```
 
-The deployment uses the `iceberg-stream.yourcompany.com/inject: "true"` annotation. The
-webhook automatically injects the engine sidecar, the shared UDS socket volume, and the
-RocksDB PVC.
+# Tear down only the pipelines
+powershell -ExecutionPolicy Bypass -File .\run.ps1 pipelines-down
+
+# Install pipelines without redeploying the app
+powershell -ExecutionPolicy Bypass -File .\run.ps1 pipelines-up
+```
 
 ## API Endpoints
 
-### POST `/events` — ingest one event
+### `POST /events` — ingest one `TelemetryEvent` to the `telemetry_events` pipeline
 ```bash
 curl -X POST http://k8s-node-1.local/events \
   -H 'Content-Type: application/json' \
   -d '{"source": "my-service", "payload": "hello world", "severity": 2}'
-# → {"id":"<uuid>","status":"ingested"}
+# → {"id":"<uuid>","table":"telemetry_events","status":"ingested"}
 ```
 
-### POST `/events/load?count=N` — load test
+### `POST /audit` — ingest one `AuditEvent` to the `audit_events` pipeline
+Demonstrates v2's per-table SDK routing. The SDK reads `@IcebergEntity.table` off the `AuditEvent` class and dispatches over a different gRPC channel than `TelemetryEvent`.
+```bash
+curl -X POST http://k8s-node-1.local/audit \
+  -H 'Content-Type: application/json' \
+  -d '{"actor": "alice", "action": "login", "resource": "/dashboard"}'
+# → {"id":"<uuid>","table":"audit_events","status":"ingested"}
+```
+
+### `POST /events/load?count=N` — load test (telemetry_events only)
 ```bash
 curl -X POST "http://k8s-node-1.local/events/load?count=5000"
-# → {"sent":5000,"elapsedMs":342,"throughputPerSec":14619}
+# → {"table":"telemetry_events","sent":5000,"elapsedMs":342,"throughputPerSec":14619}
 ```
 
-### POST `/events/flush` — manually trigger commit
+### `POST /events/flush?table=<table>` — force a pipeline to commit
+v2 routes the flush to the pipeline owning `table`. Defaults to `telemetry_events`. Requires `ENABLE_MANUAL_FLUSH=true` on that engine pipeline (the chart sets it `true` by default for local eval).
 ```bash
 curl -X POST "http://k8s-node-1.local/events/flush"
-# → {"status":"flushed"}
+curl -X POST "http://k8s-node-1.local/events/flush?table=audit_events"
+# → {"table":"audit_events","status":"flushed"}
 ```
 
 ### `/loadtest/*` — in-process load generator
-
-Server-driven load test. The sandbox runs the generator itself (no `k6`
-installation required) and exposes counters + p50/p95/p99 latency per cell.
-The hub spec at
-[`micewriter-hub/docs/load-testing-spec.md`](../micewriter-hub/docs/load-testing-spec.md)
-is the authoritative reference for request/response semantics and the
-recommended sweep matrix.
-
-> **View the Results**: The recorded baseline results from these load test sweeps can be found in [`load-tests/results/results.md`](load-tests/results/results.md).
+Same shape as v1. The hub spec at [`micewriter-hub/docs/load-testing-spec.md`](../micewriter-hub/docs/load-testing-spec.md) is the authoritative reference.
 
 | Method | Path | Body | Response |
 |---|---|---|---|
 | `POST` | `/loadtest/start` | `{ rate, payloadSizeBytes, durationSec }` | `{ runId, status }` |
-| `POST` | `/loadtest/sweep` | `{ restSecondsBetween, cells: [{rate, payloadSizeBytes, durationSec}, …] }` | `{ runId, status, cellCount }` |
+| `POST` | `/loadtest/sweep` | `{ restSecondsBetween, cells: [...] }` | `{ runId, status, cellCount }` |
 | `GET`  | `/loadtest/{runId}` | — | per-cell counters + p50/p95/p99 |
-| `GET`  | `/loadtest` | — | list of recent runs (newest first) |
+| `GET`  | `/loadtest` | — | list of recent runs |
 | `POST` | `/loadtest/{runId}/stop` | — | `{ status: "STOPPED" }` |
 
-Only one run (single or sweep) can be active at a time; concurrent
-`POST /loadtest/start` or `POST /loadtest/sweep` returns `409 CONFLICT`
-with the active `runId`.
+> **View the Results**: Baseline results live in [`load-tests/results/results.md`](load-tests/results/results.md).
 
-```bash
-# Single scenario: 100 events/sec × 1 KB × 60 s
-curl -X POST http://k8s-node-1.local/loadtest/start \
-  -H 'Content-Type: application/json' \
-  -d '{"rate":100,"payloadSizeBytes":1024,"durationSec":60}'
-# → {"runId":"<uuid>","status":"RUNNING"}
-
-# Poll for results
-curl http://k8s-node-1.local/loadtest/<runId>
-```
-
-### GET `/actuator/health`
+### `GET /actuator/health`
 ```bash
 curl http://k8s-node-1.local/actuator/health
 # → {"status":"UP"}
@@ -113,11 +91,11 @@ curl http://k8s-node-1.local/actuator/health
 
 ## Verifying the Full Pipeline
 
-After running a load test, wait ~10 minutes for the engine flush cycle:
+After running a load test, wait for the engine flush cycle (~10 min, or trigger manually):
 
 ```bash
-# 1. Check engine sidecar logs
-kubectl logs -n micewriter-sandbox deploy/micewriter-sandbox -c micewriter-engine --follow
+# 1. Engine pod logs — pipelines live in the micewriter-infra namespace
+kubectl logs -n micewriter-infra deploy/engine-telemetry-events --follow
 
 # 2. MinIO: Parquet files appear in the iceberg bucket
 #    Open http://k8s-node-1.local:9001 → browse iceberg/micewriter/telemetry_events/
@@ -128,46 +106,15 @@ curl http://k8s-node-1.local:19120/api/v1/trees/main/entries
 
 ## Automated E2E Integration Tests
 
-`SystemE2EIT.java` validates the full ingestion pipeline without waiting for the
-10-minute flush cycle: it sends 1000 events, calls `/events/flush`, and asserts
-that exactly 1000 new rows are visible via the Nessie/Iceberg catalog.
-
-The test is named `*IT.java`, so it runs in the Maven `verify` phase (via
-`maven-failsafe-plugin`) — not `test`. It is selected with `-Dit.test=...`,
-not `-Dtest=...`.
+`SystemE2EIT.java` sends 1000 events to `/events/load`, forces a flush via `/events/flush`, and asserts 1000 new rows in the Iceberg table. The test is named `*IT.java` so it runs in Maven's `verify` phase (via `maven-failsafe-plugin`).
 
 ### Prerequisites
 
-1. The local k3s cluster, MinIO, and Nessie are running (see `micewriter-local-infra`).
-2. The latest `micewriter-engine` image is pushed to the k3s registry
-   (`powershell -ExecutionPolicy Bypass -File .\push.ps1` in that repo).
-3. The sandbox is deployed (`powershell -ExecutionPolicy Bypass -File .\run.ps1 deploy`).
-4. If you've changed the engine sidecar, restart the sandbox to pull the
-   newest image:
-   ```powershell
-   kubectl rollout restart deployment/micewriter-sandbox -n micewriter-sandbox
-   kubectl rollout status  deployment/micewriter-sandbox -n micewriter-sandbox --timeout=180s
-   ```
+1. Local data lake up: `cd ../micewriter-local-infra && powershell -ExecutionPolicy Bypass -File .\run.ps1 up`
+2. Engine image pushed: `cd ../micewriter-engine && powershell -ExecutionPolicy Bypass -File .\push.ps1`
+3. Sandbox + pipelines deployed: `powershell -ExecutionPolicy Bypass -File .\run.ps1 deploy`
 
 ### Running the test
-
-The test connects to `k8s-node-1.local` over the host network and relies on the
-`micewriter-sdk-java` SDK being available in the local Maven repository. Run it
-in a Dockerized Maven so versions stay consistent across machines.
-
-**1. Install the SDK into the host `~/.m2` (only required after SDK changes):**
-
-```bash
-# Run from the parent directory that contains both repos (..)
-docker run --rm \
-  -v "$(pwd):/repos" \
-  -v "$HOME/.m2:/root/.m2" \
-  -w /repos/micewriter-sdk-java \
-  maven:3.9-eclipse-temurin-17 \
-  mvn -q install -DskipTests
-```
-
-**2. Run the integration test:**
 
 ```bash
 # Run from the parent directory that contains both repos (..)
@@ -183,41 +130,15 @@ docker run --rm --network host \
       verify
 ```
 
-Mounting `$HOME/.m2:/root/.m2` caches Maven dependencies on the host so reruns
-don't redownload ~300 MB each time. `--network host` is required so the test
-JVM can resolve `k8s-node-1.local` exactly as the host does.
-
-### Windows / Git Bash notes
-
-On Windows with Git Bash or MSYS, the shell rewrites `/repos` into a Windows
-path before Docker sees it, breaking the working directory. Prefix the command
-with `MSYS_NO_PATHCONV=1` and use full Windows-style paths for the bind mounts:
-
-```bash
-MSYS_NO_PATHCONV=1 docker run --rm --network host \
-  -v "C:/Users/<you>/source/repos:/repos" \
-  -v "C:/Users/<you>/.m2:/root/.m2" \
-  -w /repos/micewriter-sandbox \
-  maven:3.9-eclipse-temurin-17 \
-  mvn "-Dit.test=SystemE2EIT" \
-      "-Dapp.url=http://k8s-node-1.local" \
-      "-Dnessie.uri=http://k8s-node-1.local:19120/api/v1" \
-      "-Dminio.url=http://k8s-node-1.local:9000" \
-      verify
-```
-
 ### Debugging a failure
 
-If the test times out waiting for new rows, the engine likely failed to
-compile or commit. Tail the sidecar logs while the test runs:
+If the test times out waiting for new rows:
 
 ```bash
-kubectl logs -n micewriter-sandbox deployment/micewriter-sandbox \
-  -c micewriter-engine --tail=100 -f
+kubectl logs -n micewriter-infra deploy/engine-telemetry-events --tail=100 -f
 ```
 
-Look for `Failed to compile CF` or `Table flush failed` lines — those carry
-the underlying Arrow / Parquet / Iceberg error.
+Look for `engine in backpressure`, `Failed to compile CF`, or `Table flush failed` — those carry the underlying error.
 
 ## File Structure
 
@@ -225,18 +146,23 @@ the underlying Arrow / Parquet / Iceberg error.
 micewriter-sandbox/
   pom.xml
   Dockerfile              # build context = parent dir (builds SDK first)
-  run.ps1                 # Windows entry point (deploy / undeploy)
+  run.ps1                 # Windows entry point (deploy / undeploy / pipelines-up / pipelines-down)
   skaffold.yaml           # alternative for Linux/Mac users
   src/main/java/com/micewriter/sandbox/
     SandboxApplication.java
     controller/
-      TelemetryController.java   # POST /events, POST /events/load
+      TelemetryController.java   # POST /events, /events/load, /audit, /events/flush
+      LoadTestController.java    # /loadtest/*
     model/
-      TelemetryEvent.java        # @IcebergEntity — the Iceberg table schema
+      TelemetryEvent.java        # @IcebergEntity(table="telemetry_events")
+      AuditEvent.java            # @IcebergEntity(table="audit_events")
+    loadtest/
+      LoadTestService.java, LoadTestRun.java
   src/main/resources/
-    application.yml
+    application.yml              # v2 micewriter.resolver + retry budgets
   k8s/
     namespace.yaml
-    deployment.yaml              # inject annotation here
+    deployment.yaml              # no sidecar injection in v2; MICEWRITER_RESOLVER env points cross-ns
     service.yaml                 # LoadBalancer on port 80→8080
+    ingress.yaml
 ```

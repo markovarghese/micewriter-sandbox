@@ -12,8 +12,15 @@ management:
         include: health,info,prometheus
 
 micewriter:
-  socket-path: /var/run/app/iceberg.sock
-  connect-timeout-ms: 10000
+  # v2 resolver template. Pipelines for this sandbox are deployed in the
+  # micewriter-infra namespace by `run.ps1 deploy`, hence the cross-namespace
+  # DNS target. Override via MICEWRITER_RESOLVER env var per environment.
+  resolver: "engine-{table}.micewriter-infra.svc:9090"
+  # Per-RPC deadline. Engines on the local stack ack RocksDB writes in
+  # microseconds, so this only matters when the pipeline is unreachable.
   ack-timeout-ms: 5000
-  # Narrow the classpath scan to this app's model package only
+  # Q2 / Q5 — bounded retry budgets when a pipeline is unreachable.
+  send-retry-ms: 30000
+  register-retry-ms: 30000
+  # Narrow the classpath scan to this app's model package only.
   base-package: com.micewriter.sandbox.model
