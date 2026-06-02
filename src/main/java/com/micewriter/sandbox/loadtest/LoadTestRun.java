@@ -19,6 +19,7 @@ public final class LoadTestRun {
         public final int payloadSizeBytes;
         public final int durationSec;
         public final String payload;
+        public final com.micewriter.sandbox.model.TelemetryEvent templateEvent;
         public final Instant queuedAt;
         public final LongAdder sent = new LongAdder();
         public final LongAdder failed = new LongAdder();
@@ -29,11 +30,12 @@ public final class LoadTestRun {
         public volatile double p95LatMs;
         public volatile double p99LatMs;
 
-        public CellExecution(int rate, int payloadSizeBytes, int durationSec, String payload, Instant queuedAt) {
+        public CellExecution(int rate, int payloadSizeBytes, int durationSec, String payload, com.micewriter.sandbox.model.TelemetryEvent templateEvent, Instant queuedAt) {
             this.rate = rate;
             this.payloadSizeBytes = payloadSizeBytes;
             this.durationSec = durationSec;
             this.payload = payload;
+            this.templateEvent = templateEvent;
             this.queuedAt = queuedAt;
         }
 

@@ -144,8 +144,41 @@ public class LoadTestService {
     }
 
     private LoadTestRun.CellExecution buildCell(int rate, int payloadSizeBytes, int durationSec, Instant startedAt) {
-        String payload = "x".repeat(payloadSizeBytes);
-        return new LoadTestRun.CellExecution(rate, payloadSizeBytes, durationSec, payload, startedAt);
+        TelemetryEvent template = new TelemetryEvent();
+        template.setMl_service_name("vrbo-rank-nova-model");
+        template.setMl_service_version("1.0");
+
+        int targetElements = Math.max(1, payloadSizeBytes / 8);
+        List<Double> t2vec = Collections.nCopies(targetElements, 0.99);
+        template.setDouble_field_1(t2vec);
+
+        List<String> defString = List.of("default_string_value");
+        List<Double> defDouble = List.of(1.0);
+        List<Integer> defInteger = List.of(1);
+
+        template.setString_field_1(defString);
+        template.setDouble_field_2(defDouble);
+        template.setString_field_2(defString);
+        template.setString_field_3(defString);
+        template.setString_field_4(defString);
+        template.setString_field_5(defString);
+        template.setDouble_field_3(defDouble);
+        template.setDouble_field_4(defDouble);
+        template.setInt_field_1(defInteger);
+        template.setDouble_field_5(defDouble);
+        template.setString_field_6(defString);
+        template.setInt_field_2(defInteger);
+        template.setInt_field_3(defInteger);
+        template.setDouble_field_6(defDouble);
+        template.setString_field_7(defString);
+        template.setString_field_8(defString);
+        template.setDouble_field_7(defDouble);
+        template.setString_field_9(defString);
+        template.setDouble_field_8(defDouble);
+        template.setString_field_10(defString);
+        template.setInt_field_4(defInteger);
+
+        return new LoadTestRun.CellExecution(rate, payloadSizeBytes, durationSec, "Payload: " + payloadSizeBytes + " bytes", template, startedAt);
     }
 
     private void claim(LoadTestRun run) {
@@ -177,13 +210,35 @@ public class LoadTestService {
             if (active.get() != run || run.status() != LoadTestRun.Status.RUNNING) {
                 return; // run was stopped/finished between ticks
             }
-            TelemetryEvent event = new TelemetryEvent(
-                    UUID.randomUUID().toString(),
-                    Instant.now(),
-                    "load-test",
-                    cell.payload,
-                    1
-            );
+            TelemetryEvent event = new TelemetryEvent();
+            event.setEvent_uuid(UUID.randomUUID().toString());
+            event.setPublished_timestamp(Instant.now());
+            event.setMl_service_name(cell.templateEvent.getMl_service_name());
+            event.setMl_service_version(cell.templateEvent.getMl_service_version());
+            
+            event.setDouble_field_1(cell.templateEvent.getDouble_field_1());
+            event.setString_field_1(cell.templateEvent.getString_field_1());
+            event.setDouble_field_2(cell.templateEvent.getDouble_field_2());
+            event.setString_field_2(cell.templateEvent.getString_field_2());
+            event.setString_field_3(cell.templateEvent.getString_field_3());
+            event.setString_field_4(cell.templateEvent.getString_field_4());
+            event.setString_field_5(cell.templateEvent.getString_field_5());
+            event.setDouble_field_3(cell.templateEvent.getDouble_field_3());
+            event.setDouble_field_4(cell.templateEvent.getDouble_field_4());
+            event.setInt_field_1(cell.templateEvent.getInt_field_1());
+            event.setDouble_field_5(cell.templateEvent.getDouble_field_5());
+            event.setString_field_6(cell.templateEvent.getString_field_6());
+            event.setInt_field_2(cell.templateEvent.getInt_field_2());
+            event.setInt_field_3(cell.templateEvent.getInt_field_3());
+            event.setDouble_field_6(cell.templateEvent.getDouble_field_6());
+            event.setString_field_7(cell.templateEvent.getString_field_7());
+            event.setString_field_8(cell.templateEvent.getString_field_8());
+            event.setDouble_field_7(cell.templateEvent.getDouble_field_7());
+            event.setString_field_9(cell.templateEvent.getString_field_9());
+            event.setDouble_field_8(cell.templateEvent.getDouble_field_8());
+            event.setString_field_10(cell.templateEvent.getString_field_10());
+            event.setInt_field_4(cell.templateEvent.getInt_field_4());
+
             try {
                 cell.timer.record(() -> icebergTemplate.send(event));
                 cell.sent.increment();

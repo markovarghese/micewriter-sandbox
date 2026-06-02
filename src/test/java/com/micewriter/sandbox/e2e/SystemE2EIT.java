@@ -60,7 +60,7 @@ public class SystemE2EIT {
 
     @Test
     public void testEndToEndIngestion() throws Exception {
-        TableIdentifier tableId = TableIdentifier.of(Namespace.of("micewriter"), "telemetry_events");
+        TableIdentifier tableId = TableIdentifier.of(Namespace.of("micewriter"), "load_test_events");
         
         final long initialRows;
         if (catalog.tableExists(tableId)) {

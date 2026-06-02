@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -29,16 +30,19 @@ public class TelemetryController {
      */
     @PostMapping
     public ResponseEntity<Map<String, Object>> ingest(@RequestBody EventRequest request) {
-        TelemetryEvent event = new TelemetryEvent(
-                UUID.randomUUID().toString(),
-                Instant.now(),
-                request.getSource() != null ? request.getSource() : "sandbox",
-                request.getPayload(),
-                request.getSeverity()
-        );
+        String uuid = UUID.randomUUID().toString();
+        TelemetryEvent event = new TelemetryEvent();
+        event.setEvent_uuid(uuid);
+        event.setPublished_timestamp(Instant.now());
+        event.setMl_service_name("sandbox_ingest");
+        event.setMl_service_version("1.0.0");
+        
+        event.setString_field_1(List.of("2026-06-02"));
+        event.setDouble_field_1(List.of(0.5, 0.6));
+        
         icebergTemplate.send(event);
         return ResponseEntity.ok(Map.of(
-                "id", event.getId(),
+                "id", event.getEvent_uuid(),
                 "status", "ingested"
         ));
     }
@@ -55,13 +59,15 @@ public class TelemetryController {
     public ResponseEntity<Map<String, Object>> loadTest(@RequestParam(defaultValue = "100") int count) {
         long start = System.currentTimeMillis();
         for (int i = 0; i < count; i++) {
-            TelemetryEvent event = new TelemetryEvent(
-                    UUID.randomUUID().toString(),
-                    Instant.now(),
-                    "load-test",
-                    "synthetic event " + i,
-                    i % 5 + 1
-            );
+            String uuid = UUID.randomUUID().toString();
+            TelemetryEvent event = new TelemetryEvent();
+            event.setEvent_uuid(uuid);
+            event.setPublished_timestamp(Instant.now());
+            event.setMl_service_name("load-test");
+            event.setMl_service_version("1.0.0");
+            
+            event.setDouble_field_1(List.of((double) i));
+            
             icebergTemplate.send(event);
         }
         long elapsed = System.currentTimeMillis() - start;

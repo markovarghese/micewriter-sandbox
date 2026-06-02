@@ -17,3 +17,4 @@
 | 2026-05-31 22:30Z | 15 | 100 KB | 500 | 900s | 0.7 ms | 0.0 / s | 450021 / 450021 | N/A | N/A | N/A | |
 | 2026-06-01T06:43:04Z | Cell 12 | 1 KB | 500 | 900 | 0.58ms | 119.78 | 342212 | 104m | 51 MB | No | Backpressure gracefully handled |
 | 2026-06-01T06:59:05Z | Cell 8 | 10 MB | 10 | 900 | 60.29ms | 0.72 | 8352 | 374m | 208 MB | No | No OOMKill! Direct I/O successful. |
+| 2026-06-02T07:25:36Z | 1 | 1 KB | 1 | 900s | 8.0 ms | 1.0 / s | 0 / 901 | 1m | 7 MB | No | Baseline 1 KB load test completed successfully |
