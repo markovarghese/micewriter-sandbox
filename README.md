@@ -3,7 +3,7 @@
 
 Reference Spring Boot microservice. Demonstrates end-to-end **v2** telemetry ingestion: HTTP request → SDK → gRPC → per-table engine pipeline → RocksDB → (every ~10 min) → MinIO Parquet → Nessie Iceberg commit. Writes to two Iceberg tables (`telemetry_events`, `audit_events`) so per-table SDK routing is exercised end-to-end.
 
-> 📜 The v1 sandbox (sidecar-injected, UDS-based) is preserved on the `v1` branch and at the `v1.0.0` tag.
+> 📜 The v1 sandbox (sidecar-injected, UDS-based) is an actively maintained release line on the `v1` branch (`v1.0.0` tags the original snapshot). v1 and v2 evolve independently.
 
 ## Prerequisites
 
