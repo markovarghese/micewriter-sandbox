@@ -29,6 +29,8 @@ SOCKET_PATH=/tmp/iceberg.sock \
 MICEWRITER_SOCKET_PATH=/tmp/iceberg.sock mvn spring-boot:run
 ```
 
+![Local vs Kubernetes Architecture](local-vs-k8s.drawio.svg)
+
 ## Deploying to k8s
 
 ```powershell
@@ -48,6 +50,8 @@ powershell -ExecutionPolicy Bypass -File .\run.ps1 undeploy
 The deployment uses the `iceberg-stream.yourcompany.com/inject: "true"` annotation. The
 webhook automatically injects the engine sidecar, the shared UDS socket volume, and the
 RocksDB PVC.
+
+![Kubernetes Sidecar Injection Architecture](k8s-injection.drawio.svg)
 
 ## API Endpoints
 
@@ -137,6 +141,8 @@ that exactly 1000 new rows are visible via the Nessie/Iceberg catalog.
 The test is named `*IT.java`, so it runs in the Maven `verify` phase (via
 `maven-failsafe-plugin`) — not `test`. It is selected with `-Dit.test=...`,
 not `-Dtest=...`.
+
+![End-to-End Test Execution Flow](e2e-flow.drawio.svg)
 
 ### Prerequisites
 
