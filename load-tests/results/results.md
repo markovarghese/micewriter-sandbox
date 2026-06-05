@@ -35,3 +35,4 @@
 | 2026-06-05T01:36:00Z | Sweep 1MB@10 | 1 MB | 10 | 900s | 16.5 ms | 10.00 / s | 0 / 9002 | N/A | N/A | No | Under-capacity, 100% successful! |
 | 2026-06-05T02:56:55Z | Cell 11 | 1 MB | 100 | 60s | 192.9 ms | 13.41 / s | 5156 / 5962 | 480m | 114 MB | No | Fully bounds memory using flush_compile_batch_bytes! No OOMKill. Graceful backpressure. |
 | 2026-06-05T02:59:17Z | Cell 16 | 10 MB | 500 | 60s | N/A | 0 / s | N/A | N/A | N/A | Yes | Expected OOMKill. 10MB individual payloads fill bounded channels (capacity=16) with > 600MB of Arrow overhead, exceeding 512Mi limits. |
+| 2026-06-05T03:07:12Z | Cell 15 | 1 MB | 500 | 60s | 96.4 ms | 13.28 / s | 16779 / 17577 | 480m | 114 MB | No | Fully bounds memory. Validates backpressure behavior under extreme load (500 MB/s). Engine CPU limits cap throughput at ~13 MB/s. |
