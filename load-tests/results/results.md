@@ -33,3 +33,5 @@
 | 2026-06-05T00:59:11Z | Sweep 1KB@10 | 1 KB | 10 | 900s | 20.9 ms | 10.00 / s | 0 / 9002 | 5m | 50 MB | No | Fully successful! |
 | 2026-06-05T01:15:11Z | Sweep 1MB@100 | 1 MB | 100 | 900s | 16.2 ms | 16.13 / s | 75504 / 90020 | 438m | 77 MB | No | Graceful backpressure. $R_{io}$ converges to ~16 MB/sec. |
 | 2026-06-05T01:36:00Z | Sweep 1MB@10 | 1 MB | 10 | 900s | 16.5 ms | 10.00 / s | 0 / 9002 | N/A | N/A | No | Under-capacity, 100% successful! |
+| 2026-06-05T02:56:55Z | Cell 11 | 1 MB | 100 | 60s | 192.9 ms | 13.41 / s | 5156 / 5962 | 480m | 114 MB | No | Fully bounds memory using flush_compile_batch_bytes! No OOMKill. Graceful backpressure. |
+| 2026-06-05T02:59:17Z | Cell 16 | 10 MB | 500 | 60s | N/A | 0 / s | N/A | N/A | N/A | Yes | Expected OOMKill. 10MB individual payloads fill bounded channels (capacity=16) with > 600MB of Arrow overhead, exceeding 512Mi limits. |
