@@ -30,3 +30,6 @@
 | 2026-06-02T10:24:51Z | Sweep 1MB@100 | 1 MB | 100 | 900s | 4.3 ms | 0.03 / s | 89973 / 90002 | 45m | 135 MB | No | |
 | 2026-06-02T10:40:51Z | Sweep 1KB@500 | 1 KB | 500 | 900s | 0.6 ms | 53.5 / s | 401867 / 450043 | 43m | 121 MB | No | Saturated at ~53/s, graceful degradation |
 | 2026-06-02T10:56:51Z | Sweep 100KB@500 | 100 KB | 500 | 900s | 0.7 ms | 0.32 / s | 449737 / 450027 | 45m | 74 MB | No | |
+| 2026-06-05T00:59:11Z | Sweep 1KB@10 | 1 KB | 10 | 900s | 20.9 ms | 10.00 / s | 0 / 9002 | 5m | 50 MB | No | Fully successful! |
+| 2026-06-05T01:15:11Z | Sweep 1MB@100 | 1 MB | 100 | 900s | 16.2 ms | 16.13 / s | 75504 / 90020 | 438m | 77 MB | No | Graceful backpressure. $R_{io}$ converges to ~16 MB/sec. |
+| 2026-06-05T01:36:00Z | Sweep 1MB@10 | 1 MB | 10 | 900s | 16.5 ms | 10.00 / s | 0 / 9002 | N/A | N/A | No | Under-capacity, 100% successful! |
