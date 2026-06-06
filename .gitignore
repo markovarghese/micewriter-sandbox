@@ -31,3 +31,9 @@ Desktop.ini
 *.swp
 *.swo
 *.iml
+
+# Untracked files
+scratch/
+bench-pod.yaml
+iperf-client.yaml
+iperf-server.yaml
