@@ -71,12 +71,8 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "app": "grafana-assistant-app",
-                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"micewriter-engine\"}[$__rate_interval]))",
-                        "instant": false,
-                        "legendFormat": "CPU Core Usage",
-                        "queryType": "range",
-                        "range": true
+                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"micewriter-engine\"}[2m]))",
+                        "legendFormat": "CPU Core Usage"
                       }
                     },
                     "refId": "A",
@@ -94,12 +90,8 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "app": "grafana-assistant-app",
                         "expr": "sum(container_memory_working_set_bytes{container=\"micewriter-engine\"})",
-                        "instant": false,
-                        "legendFormat": "Memory (working set)",
-                        "queryType": "range",
-                        "range": true
+                        "legendFormat": "Memory (working set)"
                       }
                     },
                     "refId": "B",
@@ -251,12 +243,8 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "app": "grafana-assistant-app",
-                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"nessie\"}[$__rate_interval]))",
-                        "instant": false,
-                        "legendFormat": "CPU Core Usage",
-                        "queryType": "range",
-                        "range": true
+                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"nessie\"}[2m]))",
+                        "legendFormat": "CPU Core Usage"
                       }
                     },
                     "refId": "A",
@@ -274,12 +262,8 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "app": "grafana-assistant-app",
                         "expr": "sum(container_memory_working_set_bytes{container=\"nessie\"})",
-                        "instant": false,
-                        "legendFormat": "Memory (working set)",
-                        "queryType": "range",
-                        "range": true
+                        "legendFormat": "Memory (working set)"
                       }
                     },
                     "refId": "B",
@@ -431,12 +415,8 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "app": "grafana-assistant-app",
-                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"minio\"}[$__rate_interval]))",
-                        "instant": false,
-                        "legendFormat": "CPU Core Usage",
-                        "queryType": "range",
-                        "range": true
+                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"minio\"}[2m]))",
+                        "legendFormat": "CPU Core Usage"
                       }
                     },
                     "refId": "A",
@@ -454,12 +434,8 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "app": "grafana-assistant-app",
                         "expr": "sum(container_memory_working_set_bytes{container=\"minio\"})",
-                        "instant": false,
-                        "legendFormat": "Memory (working set)",
-                        "queryType": "range",
-                        "range": true
+                        "legendFormat": "Memory (working set)"
                       }
                     },
                     "refId": "B",
@@ -611,12 +587,8 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "app": "grafana-assistant-app",
-                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"micewriter-sandbox\"}[$__rate_interval]))",
-                        "instant": false,
-                        "legendFormat": "CPU Core Usage",
-                        "queryType": "range",
-                        "range": true
+                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"sandbox\"}[2m]))",
+                        "legendFormat": "CPU Core Usage"
                       }
                     },
                     "refId": "A",
@@ -634,12 +606,8 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "app": "grafana-assistant-app",
-                        "expr": "sum(container_memory_working_set_bytes{container=\"micewriter-sandbox\"})",
-                        "instant": false,
-                        "legendFormat": "Memory (working set)",
-                        "queryType": "range",
-                        "range": true
+                        "expr": "sum(container_memory_working_set_bytes{container=\"sandbox\"})",
+                        "legendFormat": "Memory (working set)"
                       }
                     },
                     "refId": "B",
@@ -791,7 +759,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "rate(engine_parquet_bytes_written_total[1m])",
+                        "expr": "rate(engine_parquet_bytes_written_total[2m])",
                         "legendFormat": "Parquet Write Rate (Bytes/sec)"
                       }
                     },
@@ -810,7 +778,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "rate(engine_parquet_files_written_total[1m])",
+                        "expr": "rate(engine_parquet_files_written_total[2m])",
                         "legendFormat": "Parquet Write Rate (Files/sec)"
                       }
                     },
@@ -960,7 +928,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "increase(engine_catalog_commits_total[1m])",
+                        "expr": "increase(engine_catalog_commits_total[2m])",
                         "legendFormat": "Catalog Commits"
                       }
                     },
@@ -1078,7 +1046,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "rate(engine_ipc_requests_total[1m])",
+                        "expr": "rate(engine_ipc_requests_total[2m])",
                         "legendFormat": "{{type}}"
                       }
                     },
@@ -1199,7 +1167,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "rate(engine_ipc_responses_total[1m])",
+                        "expr": "rate(engine_ipc_responses_total[2m])",
                         "legendFormat": "{{status}}"
                       }
                     },
