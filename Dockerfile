@@ -7,7 +7,7 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Build SDK then sandbox
 # ---------------------------------------------------------------------------
-FROM maven:3.9-eclipse-temurin-17 AS builder
+FROM maven:3.9-eclipse-temurin-25 AS builder
 
 WORKDIR /build
 
@@ -23,7 +23,7 @@ RUN mvn -f micewriter-sandbox/pom.xml package -DskipTests -q
 # ---------------------------------------------------------------------------
 # Stage 2: Runtime — minimal JRE image
 # ---------------------------------------------------------------------------
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:25-jre-jammy
 
 RUN useradd -r -u 1000 -g daemon micewriter
 USER micewriter

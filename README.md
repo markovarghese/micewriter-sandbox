@@ -171,7 +171,7 @@ docker run --rm \
   -v "$(pwd):/repos" \
   -v "$HOME/.m2:/root/.m2" \
   -w /repos/micewriter-sdk-java \
-  maven:3.9-eclipse-temurin-17 \
+  maven:3.9-eclipse-temurin-25 \
   mvn -q install -DskipTests
 ```
 
@@ -183,7 +183,7 @@ docker run --rm --network host \
   -v "$(pwd):/repos" \
   -v "$HOME/.m2:/root/.m2" \
   -w /repos/micewriter-sandbox \
-  maven:3.9-eclipse-temurin-17 \
+  maven:3.9-eclipse-temurin-25 \
   mvn "-Dit.test=SystemE2EIT" \
       "-Dapp.url=http://k8s-node-1.local" \
       "-Dnessie.uri=http://k8s-node-1.local:19120/api/v1" \
@@ -206,7 +206,7 @@ MSYS_NO_PATHCONV=1 docker run --rm --network host \
   -v "C:/Users/<you>/source/repos:/repos" \
   -v "C:/Users/<you>/.m2:/root/.m2" \
   -w /repos/micewriter-sandbox \
-  maven:3.9-eclipse-temurin-17 \
+  maven:3.9-eclipse-temurin-25 \
   mvn "-Dit.test=SystemE2EIT" \
       "-Dapp.url=http://k8s-node-1.local" \
       "-Dnessie.uri=http://k8s-node-1.local:19120/api/v1" \

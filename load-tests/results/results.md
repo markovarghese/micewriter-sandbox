@@ -47,3 +47,4 @@
 | 2026-06-06T14:16:09Z | Cell 11 | 1 MB | 100 | 360s | 8.0 ms | 45.29 / s | 19696 / 36001 | 646m | 251 MB | No | Second 6-minute run confirming PromQL rate interval fixes. Achieved 45.3 MB/s throughput with perfect backpressure handling and zero OOMs. |
 | 2026-06-06T14:53:01Z | Cell 11 | 1 MB | 100 | 120s | 8.0 ms | 48.01 / s | 6244 / 12008 | N/A | N/A | No | Engine gracefully applied backpressure. Peak stats N/A due to Grafana connection error. |
 | 2026-06-06T14:59:39Z | Cell 11 (Fixed Annotation) | 1 MB | 100 | 120s | 8.3 ms | 47.82 / s | 6265 / 12007 | N/A | N/A | No | Application metrics should now be flowing to Grafana! |
+| 2026-06-06T16:21:34Z | Cell 11 (Java 25) | 1 MB | 100 | 30s | 9.7 ms | 48.50 / s | 1546 / 3002 | N/A | N/A | No | Java 25 & Spring Boot 4.0.6 upgrade complete! Serialization fixed with JavaTimeModule. Engine handled backpressure perfectly. |
