@@ -18,10 +18,10 @@ spec:
       labels:
         app: micewriter-sandbox
       annotations:
-        # Prometheus scraping annotations for Grafana Alloy
+        # Prometheus scraping annotations for Grafana Alloy (pointing to Rust engine sidecar)
         prometheus.io/scrape: "true"
-        prometheus.io/path: "/actuator/prometheus"
-        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8088"
         
         # This label triggers the micewriter-k8s-injector Mutating Webhook.
         # The webhook will inject:
