@@ -71,7 +71,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"micewriter-engine\"}[2m]))",
+                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"micewriter-engine\"}[$__rate_interval]))",
                         "legendFormat": "CPU Core Usage"
                       }
                     },
@@ -243,7 +243,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"nessie\"}[2m]))",
+                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"nessie\"}[$__rate_interval]))",
                         "legendFormat": "CPU Core Usage"
                       }
                     },
@@ -415,7 +415,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"minio\"}[2m]))",
+                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"minio\"}[$__rate_interval]))",
                         "legendFormat": "CPU Core Usage"
                       }
                     },
@@ -587,7 +587,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"sandbox\"}[2m]))",
+                        "expr": "sum(rate(container_cpu_usage_seconds_total{container=\"sandbox\"}[$__rate_interval]))",
                         "legendFormat": "CPU Core Usage"
                       }
                     },
@@ -759,7 +759,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "sum(rate(engine_parquet_bytes_written_total[2m]))",
+                        "expr": "sum(rate(engine_parquet_bytes_written_total{container=\"micewriter-engine\"}[$__rate_interval]))",
                         "legendFormat": "Parquet Write Rate (Bytes/sec)"
                       }
                     },
@@ -778,7 +778,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "rate(engine_parquet_files_written_total[2m])",
+                        "expr": "sum(rate(engine_parquet_files_written_total{container=\"micewriter-engine\"}[$__rate_interval]))",
                         "legendFormat": "Parquet Write Rate (Files/sec)"
                       }
                     },
@@ -928,7 +928,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "sum(increase(engine_catalog_commits_total[2m]))",
+                        "expr": "sum(increase(engine_catalog_commits_total{container=\"micewriter-engine\"}[$__rate_interval]))",
                         "legendFormat": "Catalog Commits"
                       }
                     },
@@ -1046,7 +1046,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "sum by (type) (rate(engine_ipc_requests_total[2m]))",
+                        "expr": "sum by (type) (rate(engine_ipc_requests_total{container=\"micewriter-engine\"}[$__rate_interval]))",
                         "legendFormat": "{{type}}"
                       }
                     },
@@ -1167,7 +1167,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "sum by (status) (rate(engine_ipc_responses_total[2m]))",
+                        "expr": "sum by (status) (rate(engine_ipc_responses_total{container=\"micewriter-engine\"}[$__rate_interval]))",
                         "legendFormat": "{{status}}"
                       }
                     },

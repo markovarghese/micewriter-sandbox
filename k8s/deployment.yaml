@@ -25,6 +25,16 @@ spec:
         k8s.grafana.com/scrape: "true"
         k8s.grafana.com/metrics.path: "/metrics"
         k8s.grafana.com/metrics.portNumber: "8088"
+        # Pin the scrape to the engine sidecar container. Grafana Alloy's
+        # annotation_autodiscovery generates one target per pod container
+        # and, when metrics.portNumber is set, rewrites every target's
+        # address to that port — so without this filter the engine's
+        # /metrics endpoint gets scraped twice (once labeled
+        # container=micewriter-engine, once container=sandbox), doubling
+        # billable series and the rate() values in PromQL. The
+        # `metrics.container` annotation feeds Alloy's `keepequal` rule
+        # against the discovered container label and drops the mismatch.
+        k8s.grafana.com/metrics.container: "micewriter-engine"
         
         # This label triggers the micewriter-k8s-injector Mutating Webhook.
         # The webhook will inject:
