@@ -759,7 +759,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "rate(engine_parquet_bytes_written_total[2m])",
+                        "expr": "sum(rate(engine_parquet_bytes_written_total[2m]))",
                         "legendFormat": "Parquet Write Rate (Bytes/sec)"
                       }
                     },
@@ -928,7 +928,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "increase(engine_catalog_commits_total[2m])",
+                        "expr": "sum(increase(engine_catalog_commits_total[2m]))",
                         "legendFormat": "Catalog Commits"
                       }
                     },
@@ -1046,7 +1046,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "rate(engine_ipc_requests_total[2m])",
+                        "expr": "sum by (type) (rate(engine_ipc_requests_total[2m]))",
                         "legendFormat": "{{type}}"
                       }
                     },
@@ -1167,7 +1167,7 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "rate(engine_ipc_responses_total[2m])",
+                        "expr": "sum by (status) (rate(engine_ipc_responses_total[2m]))",
                         "legendFormat": "{{status}}"
                       }
                     },

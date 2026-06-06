@@ -46,3 +46,4 @@
 | 2026-06-06T14:02:06Z | Cell 11 | 1 MB | 100 | 360s | 8.1 ms | 46.09 / s | 19406 / 36001 | 652m | 323 MB | No | Successfully confirmed sustained performance over 6 minutes without OOM. Achieved 46.1 MB/s throughput with functional backpressure. |
 | 2026-06-06T14:16:09Z | Cell 11 | 1 MB | 100 | 360s | 8.0 ms | 45.29 / s | 19696 / 36001 | 646m | 251 MB | No | Second 6-minute run confirming PromQL rate interval fixes. Achieved 45.3 MB/s throughput with perfect backpressure handling and zero OOMs. |
 | 2026-06-06T14:53:01Z | Cell 11 | 1 MB | 100 | 120s | 8.0 ms | 48.01 / s | 6244 / 12008 | N/A | N/A | No | Engine gracefully applied backpressure. Peak stats N/A due to Grafana connection error. |
+| 2026-06-06T14:59:39Z | Cell 11 (Fixed Annotation) | 1 MB | 100 | 120s | 8.3 ms | 47.82 / s | 6265 / 12007 | N/A | N/A | No | Application metrics should now be flowing to Grafana! |
