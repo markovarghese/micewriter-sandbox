@@ -12,8 +12,9 @@ FROM maven:3.9-eclipse-temurin-25 AS builder
 WORKDIR /build
 
 # Install the SDK into the container-local Maven repo first.
-COPY micewriter-sdk-java               ./micewriter-sdk-java
-RUN mvn -f micewriter-sdk-java/pom.xml install -DskipTests -q
+# v1 sandbox builds against the v1 SDK worktree (has the bounded-async sendAsync API).
+COPY micewriter-sdk-java-v1               ./micewriter-sdk-java-v1
+RUN mvn -f micewriter-sdk-java-v1/pom.xml install -DskipTests -q
 
 # Build the sandbox (SDK is now in the local repo).
 COPY micewriter-sandbox/pom.xml          ./micewriter-sandbox/pom.xml
