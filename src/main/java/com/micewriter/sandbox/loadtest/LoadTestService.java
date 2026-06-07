@@ -201,7 +201,7 @@ public class LoadTestService {
     private void runCellAsync(LoadTestRun run, int cellIndex) {
         LoadTestRun.CellExecution cell = run.cells().get(cellIndex);
         cell.timer = Timer.builder("micewriter.loadtest.send")
-                .description("Latency of icebergTemplate.send() during a load test")
+                .description("Latency of icebergTemplate.sendAsync() during a load test")
                 .tags(Tags.of(
                         "run_id", run.runId(),
                         "cell_index", String.valueOf(cellIndex),
@@ -253,17 +253,35 @@ public class LoadTestService {
             event.setString_field_10(baseTemplate.getString_field_10());
             event.setInt_field_4(baseTemplate.getInt_field_4());
 
+            // Pipelined send: fire and let the SDK's in-flight byte budget apply backpressure
+            // (sendAsync blocks this tick thread only when the window is full). Counters and
+            // latency are recorded on ACK completion, which may run on the Netty event-loop
+            // thread — all the increments/records below are thread-safe.
+            final long sendStartNanos = System.nanoTime();
             try {
-                cell.timer.record(() -> icebergTemplate.send(event));
-                cell.sent.increment();
-                meterRegistry.counter("micewriter.loadtest.events.sent",
-                        Tags.of("run_id", runIdAtStart, "cell_index", String.valueOf(cellIndex))).increment();
+                icebergTemplate.sendAsync(event).whenComplete((v, err) -> {
+                    cell.timer.record(System.nanoTime() - sendStartNanos, TimeUnit.NANOSECONDS);
+                    if (err == null) {
+                        cell.sent.increment();
+                        meterRegistry.counter("micewriter.loadtest.events.sent",
+                                Tags.of("run_id", runIdAtStart, "cell_index", String.valueOf(cellIndex))).increment();
+                    } else {
+                        Throwable cause = (err instanceof java.util.concurrent.CompletionException && err.getCause() != null)
+                                ? err.getCause() : err;
+                        cell.failed.increment();
+                        run.setLastError(cause.getClass().getSimpleName() + ": " + cause.getMessage());
+                        meterRegistry.counter("micewriter.loadtest.events.failed",
+                                Tags.of("run_id", runIdAtStart, "cell_index", String.valueOf(cellIndex))).increment();
+                    }
+                });
             } catch (Throwable t) {
+                // Synchronous failure before the future was returned (serialization, interrupted
+                // budget acquisition, >16 MB payload). Swallow — one bad send shouldn't kill the run.
+                cell.timer.record(System.nanoTime() - sendStartNanos, TimeUnit.NANOSECONDS);
                 cell.failed.increment();
                 run.setLastError(t.getClass().getSimpleName() + ": " + t.getMessage());
                 meterRegistry.counter("micewriter.loadtest.events.failed",
                         Tags.of("run_id", runIdAtStart, "cell_index", String.valueOf(cellIndex))).increment();
-                // Swallow — one bad send shouldn't kill the whole run. The user sees failed count + lastError.
             }
         };
 
