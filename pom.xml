@@ -21,6 +21,18 @@
         <java.version>25</java.version>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.micewriter</groupId>
+                <artifactId>micewriter-sdk-bom</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <!-- Web layer -->
         <dependency>
@@ -43,7 +55,6 @@
         <dependency>
             <groupId>com.micewriter</groupId>
             <artifactId>micewriter-sdk-java-spring</artifactId>
-            <version>0.2.0</version>
         </dependency>
 
         <dependency>
