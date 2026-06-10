@@ -29,7 +29,7 @@ SOCKET_PATH=/tmp/iceberg.sock \
 MICEWRITER_SOCKET_PATH=/tmp/iceberg.sock mvn spring-boot:run
 ```
 
-![Local vs Kubernetes Architecture](local-vs-k8s.drawio.svg)
+![Local vs Kubernetes Architecture](local-vs-k8s.svg)
 
 ## Deploying to k8s
 
@@ -51,7 +51,7 @@ The deployment uses the `iceberg-stream.yourcompany.com/inject: "true"` annotati
 webhook automatically injects the engine sidecar, the shared UDS socket volume, and the
 RocksDB PVC.
 
-![Kubernetes Sidecar Injection Architecture](k8s-injection.drawio.svg)
+![Kubernetes Sidecar Injection Architecture](k8s-injection.svg)
 
 ## API Endpoints
 
@@ -86,7 +86,7 @@ recommended sweep matrix.
 
 > **View the Results**: The recorded baseline results from these load test sweeps can be found in [`load-tests/results/results.md`](load-tests/results/results.md).
 
-![Load Test Dataflow Architecture](architecture.drawio.svg)
+![Load Test Dataflow Architecture](architecture.svg)
 
 | Method | Path | Body | Response |
 |---|---|---|---|
@@ -142,7 +142,7 @@ The test is named `*IT.java`, so it runs in the Maven `verify` phase (via
 `maven-failsafe-plugin`) — not `test`. It is selected with `-Dit.test=...`,
 not `-Dtest=...`.
 
-![End-to-End Test Execution Flow](e2e-flow.drawio.svg)
+![End-to-End Test Execution Flow](e2e-flow.svg)
 
 ### Prerequisites
 

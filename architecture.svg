@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1200 400" font-family="'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Load Test Dataflow Architecture">
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#64748b"/></marker>
+    <marker id="arrowTeal" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#2dd4bf"/></marker>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f172a"/><stop offset="1" stop-color="#0b1322"/></linearGradient>
+  </defs>
+
+  <!-- background -->
+  <rect x="0" y="0" width="1200" height="400" fill="url(#bgGrad)"/>
+  <text x="40" y="40" fill="#e2e8f0" font-size="22" font-weight="700">Load Test Dataflow</text>
+
+  <!-- nodes -->
+  <rect x="50" y="150" width="150" height="80" rx="10" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+  <text x="125" y="185" fill="#e2e8f0" font-size="14" font-weight="600" text-anchor="middle">Load Generator</text>
+  <text x="125" y="205" fill="#94a3b8" font-size="10" text-anchor="middle">in-process Spring Boot</text>
+
+  <rect x="280" y="150" width="120" height="80" rx="10" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+  <text x="340" y="185" fill="#e2e8f0" font-size="14" font-weight="600" text-anchor="middle">Java SDK</text>
+  <text x="340" y="205" fill="#94a3b8" font-size="10" text-anchor="middle">IcebergStreamTemplate</text>
+
+  <rect x="480" y="150" width="160" height="80" rx="10" fill="#1e293b" stroke="#818cf8" stroke-width="1.5"/>
+  <text x="560" y="185" fill="#e2e8f0" font-size="14" font-weight="600" text-anchor="middle">Rust Engine</text>
+  <text x="560" y="205" fill="#94a3b8" font-size="10" text-anchor="middle">sidecar via UDS</text>
+
+  <rect x="720" y="100" width="140" height="80" rx="10" fill="#11241f" stroke="#2dd4bf" stroke-width="1.5"/>
+  <text x="790" y="135" fill="#e2e8f0" font-size="14" font-weight="600" text-anchor="middle">MinIO S3</text>
+  <text x="790" y="155" fill="#94a3b8" font-size="10" text-anchor="middle">Parquet files</text>
+
+  <rect x="720" y="220" width="140" height="80" rx="10" fill="#134e4a" stroke="#2dd4bf" stroke-width="1.5"/>
+  <text x="790" y="255" fill="#e2e8f0" font-size="14" font-weight="600" text-anchor="middle">Apache Nessie</text>
+  <text x="790" y="275" fill="#94a3b8" font-size="10" text-anchor="middle">Iceberg Catalog</text>
+
+  <!-- Edges -->
+  <path d="M200,190 L270,190" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M400,190 L470,190" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M640,180 L710,140" fill="none" stroke="#2dd4bf" stroke-width="2" marker-end="url(#arrowTeal)"/>
+  <path d="M640,200 L710,260" fill="none" stroke="#2dd4bf" stroke-width="2" marker-end="url(#arrowTeal)"/>
+
+  <!-- Animation dots -->
+  <circle r="4.5" fill="#7dd3fc"><animateMotion dur="1s" repeatCount="indefinite" path="M200,190 L270,190"/></circle>
+  <circle r="4.5" fill="#7dd3fc"><animateMotion dur="1s" repeatCount="indefinite" path="M400,190 L470,190"/></circle>
+  <circle r="4.5" fill="#5eead4"><animateMotion dur="1.5s" repeatCount="indefinite" path="M640,180 L710,140"/></circle>
+  <circle r="4.5" fill="#5eead4"><animateMotion dur="1.5s" repeatCount="indefinite" path="M640,200 L710,260"/></circle>
+</svg>
