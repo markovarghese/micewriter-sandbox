@@ -79,6 +79,9 @@ curl -X POST "http://k8s-node-1.local/events/flush"
 
 Server-driven load test. The sandbox runs the generator itself (no `k6`
 installation required) and exposes counters + p50/p95/p99 latency per cell.
+
+> **Design Note:** Pacing is deliberately implemented using `scheduleWithFixedDelay` (rather than `scheduleAtFixedRate`). If the underlying SDK/engine experiences backpressure, this ensures the generator gracefully slows down instead of instantly firing thousands of requests to "catch up" on missed ticks, avoiding runaway retry storms.
+
 The hub spec at
 [`micewriter-hub/docs/load-testing-spec.md`](../micewriter-hub/docs/load-testing-spec.md)
 is the authoritative reference for request/response semantics and the
