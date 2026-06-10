@@ -37,12 +37,7 @@ public class LoadTestService {
     private final MeterRegistry meterRegistry;
     private final int senderThreads;
 
-    private final ScheduledExecutorService tickExecutor =
-            Executors.newSingleThreadScheduledExecutor(r -> {
-                Thread t = new Thread(r, "loadtest-tick");
-                t.setDaemon(true);
-                return t;
-            });
+    private final ScheduledExecutorService tickExecutor;
     private final ScheduledExecutorService coordinatorExecutor =
             Executors.newSingleThreadScheduledExecutor(r -> {
                 Thread t = new Thread(r, "loadtest-coordinator");
@@ -51,10 +46,8 @@ public class LoadTestService {
             });
 
     private final AtomicReference<LoadTestRun> active = new AtomicReference<>();
-    private volatile ScheduledFuture<?> activeTick;
+    private volatile List<ScheduledFuture<?>> activeTicks = List.of();
     private volatile ScheduledFuture<?> activeStopper;
-    private volatile AtomicBoolean workerStop;
-    private volatile List<Thread> activeWorkers = List.of();
 
     private final Map<String, LoadTestRun> history = Collections.synchronizedMap(
             new LinkedHashMap<String, LoadTestRun>(HISTORY_LIMIT + 1, 0.75f, false) {
@@ -69,6 +62,11 @@ public class LoadTestService {
         this.meterRegistry = meterRegistry;
         String envVal = System.getenv("LOADTEST_SENDER_THREADS");
         this.senderThreads = envVal != null ? Math.max(1, Integer.parseInt(envVal.trim())) : 1;
+        this.tickExecutor = Executors.newScheduledThreadPool(this.senderThreads, r -> {
+            Thread t = new Thread(r, "loadtest-tick");
+            t.setDaemon(true);
+            return t;
+        });
         log.info("Load test sender threads: {}", senderThreads);
     }
 
@@ -291,31 +289,21 @@ public class LoadTestService {
         };
 
         if (senderThreads > 1) {
-            // Unpaced multi-thread mode: N threads fire as fast as the SDK's in-flight window
-            // allows. Each thread blocks in sendAsync only when the byte budget is exhausted —
-            // that's the natural backpressure ceiling we're trying to measure. The rate field
-            // is a label only; achievedRate in the result reflects actual throughput.
-            AtomicBoolean stop = new AtomicBoolean(false);
-            workerStop = stop;
-            List<Thread> workers = new ArrayList<>(senderThreads);
+            // Paced multi-thread mode: use tickExecutor thread pool to fire paced sends
+            // distributed evenly across the senderThreads. If a thread blocks due to
+            // backpressure, the subsequent ticks back up automatically (scheduleAtFixedRate behavior).
+            long periodNanos = Math.max(1, (1_000_000_000L * senderThreads) / cell.rate);
+            long staggerNanos = Math.max(1, 1_000_000_000L / cell.rate);
+            List<ScheduledFuture<?>> futures = new ArrayList<>(senderThreads);
             for (int i = 0; i < senderThreads; i++) {
-                final int workerIndex = i;
-                Thread worker = new Thread(() -> {
-                    while (!stop.get() && !Thread.currentThread().isInterrupted()
-                            && active.get() == run && run.status() == LoadTestRun.Status.RUNNING) {
-                        sendOnce.run();
-                    }
-                }, "loadtest-sender-" + workerIndex);
-                worker.setDaemon(true);
-                workers.add(worker);
+                futures.add(tickExecutor.scheduleAtFixedRate(sendOnce, i * staggerNanos, periodNanos, TimeUnit.NANOSECONDS));
             }
-            activeWorkers = workers;
-            workers.forEach(Thread::start);
-            log.info("Started {} sender threads for cell {} of run {}", senderThreads, cellIndex, run.runId());
+            activeTicks = futures;
+            log.info("Started {} paced sender threads for cell {} of run {}", senderThreads, cellIndex, run.runId());
         } else {
             // Single-thread paced mode: one tick per 1/rate seconds (original behavior).
             long periodNanos = Math.max(1, 1_000_000_000L / cell.rate);
-            activeTick = tickExecutor.scheduleAtFixedRate(sendOnce, 0, periodNanos, TimeUnit.NANOSECONDS);
+            activeTicks = List.of(tickExecutor.scheduleAtFixedRate(sendOnce, 0, periodNanos, TimeUnit.NANOSECONDS));
         }
 
         // Schedule the cell stop. For single-cell runs, the stop transitions the whole run to DONE.
@@ -394,26 +382,15 @@ public class LoadTestService {
     }
 
     private void cancelTimers() {
-        if (activeTick != null) {
-            activeTick.cancel(false);
-            activeTick = null;
+        if (activeTicks != null) {
+            for (ScheduledFuture<?> f : activeTicks) {
+                if (f != null) f.cancel(true); // Must interrupt to unblock semaphore or wait
+            }
+            activeTicks = List.of();
         }
         if (activeStopper != null) {
             activeStopper.cancel(false);
             activeStopper = null;
-        }
-        // Stop worker threads (multi-thread mode): set flag, interrupt to unblock any
-        // threads waiting on the in-flight semaphore, then join with a brief timeout.
-        AtomicBoolean stop = workerStop;
-        if (stop != null) {
-            stop.set(true);
-            workerStop = null;
-        }
-        List<Thread> workers = activeWorkers;
-        activeWorkers = List.of();
-        for (Thread t : workers) t.interrupt();
-        for (Thread t : workers) {
-            try { t.join(2000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
         }
     }
 
