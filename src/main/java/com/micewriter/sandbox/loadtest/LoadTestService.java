@@ -296,14 +296,14 @@ public class LoadTestService {
             long staggerNanos = Math.max(1, 1_000_000_000L / cell.rate);
             List<ScheduledFuture<?>> futures = new ArrayList<>(senderThreads);
             for (int i = 0; i < senderThreads; i++) {
-                futures.add(tickExecutor.scheduleAtFixedRate(sendOnce, i * staggerNanos, periodNanos, TimeUnit.NANOSECONDS));
+                futures.add(tickExecutor.scheduleWithFixedDelay(sendOnce, i * staggerNanos, periodNanos, TimeUnit.NANOSECONDS));
             }
             activeTicks = futures;
             log.info("Started {} paced sender threads for cell {} of run {}", senderThreads, cellIndex, run.runId());
         } else {
             // Single-thread paced mode: one tick per 1/rate seconds (original behavior).
             long periodNanos = Math.max(1, 1_000_000_000L / cell.rate);
-            activeTicks = List.of(tickExecutor.scheduleAtFixedRate(sendOnce, 0, periodNanos, TimeUnit.NANOSECONDS));
+            activeTicks = List.of(tickExecutor.scheduleWithFixedDelay(sendOnce, 0, periodNanos, TimeUnit.NANOSECONDS));
         }
 
         // Schedule the cell stop. For single-cell runs, the stop transitions the whole run to DONE.
