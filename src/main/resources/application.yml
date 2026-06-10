@@ -15,5 +15,8 @@ micewriter:
   socket-path: /var/run/app/iceberg.sock
   connect-timeout-ms: 10000
   ack-timeout-ms: 5000
+  # Test-only: 256 MiB window allows ~256 concurrent 1 MiB records in flight.
+  # Production default is 8 MiB — do not copy this value to production configs.
+  max-in-flight-bytes: 268435456
   # Narrow the classpath scan to this app's model package only
   base-package: com.micewriter.sandbox.model

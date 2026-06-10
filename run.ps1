@@ -36,9 +36,11 @@ switch ($Target) {
     "deploy" {
         Write-Host "Building $image (context: $buildContext)..."
         docker build -f Dockerfile -t $fullTag $buildContext
+        if ($LASTEXITCODE -ne 0) { throw "docker step failed ($LASTEXITCODE)" }
 
         Write-Host "Pushing $fullTag..."
         docker push $fullTag
+        if ($LASTEXITCODE -ne 0) { throw "docker step failed ($LASTEXITCODE)" }
 
         Write-Host "Applying k8s manifests..."
         Invoke-Kubectl apply -f k8s/namespace.yaml

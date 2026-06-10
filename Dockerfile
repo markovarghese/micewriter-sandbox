@@ -17,9 +17,9 @@ COPY micewriter-sdk-java-v1               ./micewriter-sdk-java-v1
 RUN mvn -f micewriter-sdk-java-v1/pom.xml install -DskipTests -q
 
 # Build the sandbox (SDK is now in the local repo).
-COPY micewriter-sandbox/pom.xml          ./micewriter-sandbox/pom.xml
-COPY micewriter-sandbox/src              ./micewriter-sandbox/src
-RUN mvn -f micewriter-sandbox/pom.xml package -DskipTests -q
+COPY micewriter-sandbox-v1/pom.xml       ./micewriter-sandbox-v1/pom.xml
+COPY micewriter-sandbox-v1/src          ./micewriter-sandbox-v1/src
+RUN mvn -f micewriter-sandbox-v1/pom.xml package -DskipTests -q
 
 # ---------------------------------------------------------------------------
 # Stage 2: Runtime — minimal JRE image
@@ -30,7 +30,7 @@ RUN useradd -r -u 1000 -g daemon micewriter
 USER micewriter
 
 WORKDIR /app
-COPY --from=builder /build/micewriter-sandbox/target/micewriter-sandbox-*.jar app.jar
+COPY --from=builder /build/micewriter-sandbox-v1/target/micewriter-sandbox-*.jar app.jar
 
 EXPOSE 8080
 ENTRYPOINT ["java", "--add-opens", "java.base/java.nio=ALL-UNNAMED", "-jar", "app.jar"]

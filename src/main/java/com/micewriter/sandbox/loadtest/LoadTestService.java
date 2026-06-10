@@ -20,11 +20,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Service
@@ -35,6 +35,7 @@ public class LoadTestService {
 
     private final IcebergStreamTemplate icebergTemplate;
     private final MeterRegistry meterRegistry;
+    private final int senderThreads;
 
     private final ScheduledExecutorService tickExecutor =
             Executors.newSingleThreadScheduledExecutor(r -> {
@@ -52,6 +53,8 @@ public class LoadTestService {
     private final AtomicReference<LoadTestRun> active = new AtomicReference<>();
     private volatile ScheduledFuture<?> activeTick;
     private volatile ScheduledFuture<?> activeStopper;
+    private volatile AtomicBoolean workerStop;
+    private volatile List<Thread> activeWorkers = List.of();
 
     private final Map<String, LoadTestRun> history = Collections.synchronizedMap(
             new LinkedHashMap<String, LoadTestRun>(HISTORY_LIMIT + 1, 0.75f, false) {
@@ -64,6 +67,9 @@ public class LoadTestService {
     public LoadTestService(IcebergStreamTemplate icebergTemplate, MeterRegistry meterRegistry) {
         this.icebergTemplate = icebergTemplate;
         this.meterRegistry = meterRegistry;
+        String envVal = System.getenv("LOADTEST_SENDER_THREADS");
+        this.senderThreads = envVal != null ? Math.max(1, Integer.parseInt(envVal.trim())) : 1;
+        log.info("Load test sender threads: {}", senderThreads);
     }
 
     public LoadTestRun startSingle(int rate, int payloadSizeBytes, int durationSec) {
@@ -136,7 +142,7 @@ public class LoadTestService {
 
     private void validateCell(int rate, int payloadSizeBytes, int durationSec) {
         if (rate <= 0) throw new IllegalArgumentException("rate must be > 0");
-        if (rate > 10_000) throw new IllegalArgumentException("rate above 10000 ev/s exceeds the SDK serialization lock's practical limit");
+        if (senderThreads == 1 && rate > 10_000) throw new IllegalArgumentException("rate above 10000 ev/s exceeds the SDK serialization lock's practical limit");
         if (payloadSizeBytes < 0) throw new IllegalArgumentException("payloadSizeBytes must be >= 0");
         if (payloadSizeBytes > 64 * 1024 * 1024) throw new IllegalArgumentException("payloadSizeBytes above 64 MB risks engine's 128 MB UDS frame limit after CBOR encode");
         if (durationSec <= 0) throw new IllegalArgumentException("durationSec must be > 0");
@@ -214,12 +220,13 @@ public class LoadTestService {
         run.setActiveCellIndex(cellIndex);
         cell.actualStartedAt = Instant.now();
 
-        long periodNanos = Math.max(1, 1_000_000_000L / cell.rate);
+        String runIdAtStart = run.runId();
 
-        Runnable tick = () -> {
-            String runIdAtStart = run.runId();
+        // Shared send-one-event logic used by both the paced (single-thread) and
+        // unpaced (multi-thread) paths.
+        Runnable sendOnce = () -> {
             if (active.get() != run || run.status() != LoadTestRun.Status.RUNNING) {
-                return; // run was stopped/finished between ticks
+                return;
             }
             int templateIndex = java.util.concurrent.ThreadLocalRandom.current().nextInt(cell.templateEvents.size());
             TelemetryEvent baseTemplate = cell.templateEvents.get(templateIndex);
@@ -229,7 +236,7 @@ public class LoadTestService {
             event.setPublished_timestamp(Instant.now());
             event.setMl_service_name(baseTemplate.getMl_service_name());
             event.setMl_service_version(baseTemplate.getMl_service_version());
-            
+
             event.setDouble_field_1(baseTemplate.getDouble_field_1());
             event.setString_field_1(baseTemplate.getString_field_1());
             event.setDouble_field_2(baseTemplate.getDouble_field_2());
@@ -253,10 +260,8 @@ public class LoadTestService {
             event.setString_field_10(baseTemplate.getString_field_10());
             event.setInt_field_4(baseTemplate.getInt_field_4());
 
-            // Pipelined send: fire and let the SDK's in-flight byte budget apply backpressure
-            // (sendAsync blocks this tick thread only when the window is full). Counters and
-            // latency are recorded on ACK completion, which may run on the Netty event-loop
-            // thread — all the increments/records below are thread-safe.
+            // Pipelined send: fire and let the SDK's in-flight byte budget apply backpressure.
+            // Counters and latency are recorded on ACK completion — all thread-safe.
             final long sendStartNanos = System.nanoTime();
             try {
                 icebergTemplate.sendAsync(event).whenComplete((v, err) -> {
@@ -285,7 +290,33 @@ public class LoadTestService {
             }
         };
 
-        activeTick = tickExecutor.scheduleAtFixedRate(tick, 0, periodNanos, TimeUnit.NANOSECONDS);
+        if (senderThreads > 1) {
+            // Unpaced multi-thread mode: N threads fire as fast as the SDK's in-flight window
+            // allows. Each thread blocks in sendAsync only when the byte budget is exhausted —
+            // that's the natural backpressure ceiling we're trying to measure. The rate field
+            // is a label only; achievedRate in the result reflects actual throughput.
+            AtomicBoolean stop = new AtomicBoolean(false);
+            workerStop = stop;
+            List<Thread> workers = new ArrayList<>(senderThreads);
+            for (int i = 0; i < senderThreads; i++) {
+                final int workerIndex = i;
+                Thread worker = new Thread(() -> {
+                    while (!stop.get() && !Thread.currentThread().isInterrupted()
+                            && active.get() == run && run.status() == LoadTestRun.Status.RUNNING) {
+                        sendOnce.run();
+                    }
+                }, "loadtest-sender-" + workerIndex);
+                worker.setDaemon(true);
+                workers.add(worker);
+            }
+            activeWorkers = workers;
+            workers.forEach(Thread::start);
+            log.info("Started {} sender threads for cell {} of run {}", senderThreads, cellIndex, run.runId());
+        } else {
+            // Single-thread paced mode: one tick per 1/rate seconds (original behavior).
+            long periodNanos = Math.max(1, 1_000_000_000L / cell.rate);
+            activeTick = tickExecutor.scheduleAtFixedRate(sendOnce, 0, periodNanos, TimeUnit.NANOSECONDS);
+        }
 
         // Schedule the cell stop. For single-cell runs, the stop transitions the whole run to DONE.
         // For sweeps, the coordinator (driveSweep) handles cell transitions instead, so we don't auto-schedule.
@@ -370,6 +401,19 @@ public class LoadTestService {
         if (activeStopper != null) {
             activeStopper.cancel(false);
             activeStopper = null;
+        }
+        // Stop worker threads (multi-thread mode): set flag, interrupt to unblock any
+        // threads waiting on the in-flight semaphore, then join with a brief timeout.
+        AtomicBoolean stop = workerStop;
+        if (stop != null) {
+            stop.set(true);
+            workerStop = null;
+        }
+        List<Thread> workers = activeWorkers;
+        activeWorkers = List.of();
+        for (Thread t : workers) t.interrupt();
+        for (Thread t : workers) {
+            try { t.join(2000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
         }
     }
 

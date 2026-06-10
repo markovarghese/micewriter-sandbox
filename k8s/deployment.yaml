@@ -76,4 +76,6 @@ spec:
               cpu: 500m
             limits:
               memory: 3Gi
-              cpu: "4"
+              # No CPU limit: let the load generator burst to node capacity
+              # (k8s-node-3 = 8 vCPU) so producer-side JSON serialization isn't
+              # artificially capped. requests.cpu (500m) still drives scheduling.
