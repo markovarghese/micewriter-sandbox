@@ -1046,8 +1046,8 @@
                         "name": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "sum by (type) (rate(engine_ipc_requests_total{container=\"micewriter-engine\"}[$__rate_interval]))",
-                        "legendFormat": "{{type}}"
+                        "expr": "sum by (req_type) (rate(engine_ipc_requests_total{container=\"micewriter-engine\"}[$__rate_interval]))",
+                        "legendFormat": "{{req_type}}"
                       }
                     },
                     "refId": "A",
