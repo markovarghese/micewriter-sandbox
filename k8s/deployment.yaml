@@ -43,6 +43,7 @@ spec:
         #   - a generic ephemeral PVC at /var/lib/rocksdb (RocksDB cache)
         #   - MINIO_URL and NESSIE_URI environment variables into the sidecar
         iceberg-stream.micewriter.io/inject: "true"
+
     spec:
       # Pin to k8s-node-3 (laptop, faster CPU) so the load-gen tick loop's
       # rate tracking is not impacted by Rancher / data-lake pods elsewhere.
