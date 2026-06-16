@@ -170,3 +170,4 @@
 | 2026-06-16T00:18:38Z | Diagonal 2 | 100 KB | 10 | 300s | 46.0 ms | 9.8 / s | 0 / 2930 | 30m | 179 MB | No | Clean run |
 | 2026-06-16T00:24:40Z | Diagonal 3 | 1 MB | 100 | 300s | 637.0 ms | 53.7 / s | 0 / 16107 | 552m | 470 MB | No | Slight backpressure, but successful |
 | 2026-06-16T00:30:46Z | Diagonal 4 | 10 MB | 500 | N/A | N/A | N/A | N/A | N/A | N/A | Sandbox OOM | JVM `OutOfMemoryError: Java heap space` thrown in `LoadTestService.buildCell` before test start. Sandbox cannot allocate templates for 10MB @ 500/s. |
+| 2026-06-16T01:41:11Z | Cell 11 | 1 MB | 100 | 180s | 905.4 ms | 53.6 / s | 0 / 9652 | 589m | 731 MB | No | 0 failures but achieved rate (53.6/s) is lower than offered rate (100/s). The SDK's in-flight window throttled the producer by blocking; the engine did not reject payloads. |
