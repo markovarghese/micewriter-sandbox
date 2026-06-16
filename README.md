@@ -120,6 +120,10 @@ curl http://k8s-node-1.local/actuator/health
 # → {"status":"UP"}
 ```
 
+## Monitoring with Grafana Cloud
+
+To visualize metrics from the sandbox application and engine sidecar, please refer to the [Observability Documentation in the mIceWriter Hub](../micewriter-hub/docs/observability.md) for instructions on setting up Grafana Cloud and importing the official dashboard.
+
 ## Verifying the Full Pipeline
 
 After running a load test, wait ~10 minutes for the engine flush cycle:
