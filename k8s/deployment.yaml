@@ -58,7 +58,7 @@ spec:
           ports:
             - containerPort: 8080
           env:
-            # Heap sized for 10 MB payloads at 100 ev/s without GC pauses
+            # Heap sized for 5 MB payloads at 100 ev/s without GC pauses
             # blowing through the load-gen tick interval.
             - name: JAVA_TOOL_OPTIONS
               value: "-Xms1g -Xmx2g -XX:+UseG1GC -XX:MaxGCPauseMillis=50"
