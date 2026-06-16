@@ -1,0 +1,6 @@
+[
+  {"rate":1,   "payloadSizeBytes":1024},
+  {"rate":10,  "payloadSizeBytes":102400},
+  {"rate":100, "payloadSizeBytes":1048576},
+  {"rate":500, "payloadSizeBytes":10485760}
+]
