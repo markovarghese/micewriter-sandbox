@@ -150,45 +150,48 @@ public class LoadTestService {
     private LoadTestRun.CellExecution buildCell(int rate, int payloadSizeBytes, int durationSec, Instant startedAt) {
         int poolSize = 50;
         List<TelemetryEvent> templates = new ArrayList<>(poolSize);
-        int targetElements = Math.max(1, payloadSizeBytes / 8);
+        // 8 doubles (64 bytes) + 4 ints (16 bytes) + 10 strings (~400 bytes) = ~480 bytes per element row
+        int elementsPerArray = Math.max(1, payloadSizeBytes / 480);
 
         for (int i = 0; i < poolSize; i++) {
             TelemetryEvent template = new TelemetryEvent();
             template.setMl_service_name("vrbo-rank-nova-model");
             template.setMl_service_version("1.0");
 
-            List<Double> t2vec = new ArrayList<>(targetElements);
-            for (int j = 0; j < targetElements; j++) {
-                t2vec.add(java.util.concurrent.ThreadLocalRandom.current().nextDouble());
-            }
-            template.setDouble_field_1(t2vec);
+            List<Double> defDouble = new ArrayList<>(elementsPerArray);
+            List<Integer> defInteger = new ArrayList<>(elementsPerArray);
+            List<String> defString = new ArrayList<>(elementsPerArray);
 
-            String randStr = "random_string_" + java.util.UUID.randomUUID().toString();
-            List<String> defString = List.of(randStr);
-            List<Double> defDouble = List.of(java.util.concurrent.ThreadLocalRandom.current().nextDouble());
-            List<Integer> defInteger = List.of(java.util.concurrent.ThreadLocalRandom.current().nextInt());
+            for (int j = 0; j < elementsPerArray; j++) {
+                defDouble.add(java.util.concurrent.ThreadLocalRandom.current().nextDouble());
+                defInteger.add(java.util.concurrent.ThreadLocalRandom.current().nextInt());
+                defString.add("random_string_" + java.util.UUID.randomUUID().toString());
+            }
+
+            template.setDouble_field_1(defDouble);
+            template.setDouble_field_2(defDouble);
+            template.setDouble_field_3(defDouble);
+            template.setDouble_field_4(defDouble);
+            template.setDouble_field_5(defDouble);
+            template.setDouble_field_6(defDouble);
+            template.setDouble_field_7(defDouble);
+            template.setDouble_field_8(defDouble);
+
+            template.setInt_field_1(defInteger);
+            template.setInt_field_2(defInteger);
+            template.setInt_field_3(defInteger);
+            template.setInt_field_4(defInteger);
 
             template.setString_field_1(defString);
-            template.setDouble_field_2(defDouble);
             template.setString_field_2(defString);
             template.setString_field_3(defString);
             template.setString_field_4(defString);
             template.setString_field_5(defString);
-            template.setDouble_field_3(defDouble);
-            template.setDouble_field_4(defDouble);
-            template.setInt_field_1(defInteger);
-            template.setDouble_field_5(defDouble);
             template.setString_field_6(defString);
-            template.setInt_field_2(defInteger);
-            template.setInt_field_3(defInteger);
-            template.setDouble_field_6(defDouble);
             template.setString_field_7(defString);
             template.setString_field_8(defString);
-            template.setDouble_field_7(defDouble);
             template.setString_field_9(defString);
-            template.setDouble_field_8(defDouble);
             template.setString_field_10(defString);
-            template.setInt_field_4(defInteger);
 
             templates.add(template);
         }
